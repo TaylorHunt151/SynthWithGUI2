@@ -156,9 +156,7 @@ public:
         wxFrame* window = new wxFrame(NULL, wxID_ANY, "GUI Test", wxDefaultPosition, wxSize(600, 400));
         wxPanel* panel = new wxPanel(window);
 
-        wxTextCtrl* textBox = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(0, 0), wxSize(60, 40), wxTE_READONLY);
 
-        wxButton* button = new wxButton(panel, wxID_ANY, "Button", wxPoint(150, 50), wxSize(100, 35));
         window->Show();
 
         audioManager.start();//Starts the audio in a separate thread
