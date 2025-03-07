@@ -57,7 +57,7 @@ std::atomic<float> oscPhaseOffset = 0.0; //This should be changeable
 //ENVELOPE PARAMETERS
 std::atomic<float> attack = 10;//This should be changeable (range from 0.01 to 20)
 std::atomic<float> decay = 1;//This should be changeable (range from 0.01 to 20)
-std::atomic<float> sustain = 0.0;//This should be changeable (range from 0 to 1)
+std::atomic<float> sustain = 1;//This should be changeable (range from 0 to 1)
 std::atomic<float> release = 1;//This should be changeable (range from 0.01 to 20)
 int adsrState = 0;//Not changeable
 float oscAmpMultiplier = 0;//Not changeable

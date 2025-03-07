@@ -78,7 +78,7 @@ float oscillator(double *buffer, int buffSize, int channels, float freq, int typ
 	return phase;
 }
 
-void envelope(double *buffer, int buffSize, int channels, int sampleRate, float attack, float decay, float sustain, float release, int adsrState) {
+void envelope(double* buffer, int buffSize, int channels, int sampleRate, float attack, float decay, float sustain, float release, int adsrState) {
 	attack *= sampleRate;
 	decay *= sampleRate;
 	release *= sampleRate;
@@ -160,7 +160,7 @@ void biquadCoefs(int sampleRate, float cutoff, float q, float filterType, float 
 
 }
 
-void filter(double *buffer, int buffSize, int channelCount, int sampleRate, float *biqCoefs) {
+void filter(double* buffer, int buffSize, int channelCount, int sampleRate, float *biqCoefs) {
 
 	for (int i = 0; i < buffSize; i++) {
 		for (int j = 0; j < channelCount; j++) {
