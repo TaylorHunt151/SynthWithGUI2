@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <random>
 
 
 
@@ -18,52 +19,67 @@
 
 //****************************************************************************************************************************************************************
 //IMPORTANT PART FOR GUI IMPLEMENTATION
-//Here, I will declare an atomic attribute for each synth parameter. I want you to map them to a knobs, sliders, buttons, etc. 
+//Below this comment, I have declared an atomic global variable for each changeable synth parameter. I want you to map them to a knobs, sliders, buttons, etc.
+// 
+// Note: Atomic variables are special variables designed for multithreading. They're designed to prevent race conditions, usually caused by multiple threads/cores
+// accessing the same variable at once. Any variables that can be accessed by both the GUI and the audio code should be declared as atomics.
+// 
+// Note #2: It may be necessary to implement something called cache padding so each variable is stored on a separate cache. This is recommended for optimization,
+// but I left it out for the sake of simplicity and readability. I may change my mind on this later.
 //****************************************************************************************************************************************************************
 
 //GENERAL SYNTH PARAMETERS
 //These parameters require reinitialization of the audio device to be changed.
-std::atomic<int> voices = 16;
-std::atomic<int> sampRate = 44100;
-std::atomic<int> bufferSize = 256;
-std::atomic<int> channelCount = 2;
+std::atomic<int> voices = 16;//This should be changeable via dropdown menu
+std::atomic<int> sampRate = 44100;//This should be changeable via dropdown menu
+std::atomic<int> bufferSize = 256;//This should be changeable via dropdown menu
+int channelCount = 2;//I don't think this should be changeable. I'll decide later
 
 std::atomic<bool> reInit = false; //Set this True if any of the above parameters are changed. This should trigger the audioStart() method and reinitialize the device.
 
 
-//KEYBOARD INPUT VARIABLES
-bool noteHeld[91-27];
-std::vector<char> notesHeld;
-int oscAmpGoal = 0;
-char noteSet = ' ';
+//KEYBOARD INPUT VARIABLES (NONE OF THESE SHOULD BE CHANGEABLE DIRECTLY VIA THE GUI)
+bool noteHeld[64]; //An array that says whether each note is currently being held down
+std::vector<char> notesHeld; //A vector containing all notes currently being held in order of when they were pressed
+int oscAmpGoal = 0;//Not changeable
+char noteSet = ' ';//Not changeable
 
 
 
 //OSCILLATOR PARAMETERS
-std::atomic<int> oscType = 1;
-std::atomic<float> oscAmp = 1.0;
-std::atomic<float> oscFreq = 220;
+std::atomic<int> oscType = 4;//This should be changeable via dropdown menu
+std::atomic<float> oscAmp = 1.0;//This should be changeable via knob/slider
+std::atomic<float> oscFreq = 220;//This is set by KeyInputManager.h
 std::atomic<float> oscPhase = 0.0; //DON'T CHANGE THIS
 std::atomic<float> oscPhaseOffset = 0.0; //This should be changeable
 
+
 //ENVELOPE PARAMETERS
-std::atomic<float> attack = 1;
-std::atomic<float> decay = 1;
-std::atomic<float> sustain = 0.0;
-std::atomic<float> release = 1;
-int adsrState = 0; //DONT CHANGE THIS (controls whether the envelope is currently in the attack, decay, sustain, or release phase)
-float oscAmpMultiplier = 0;
+std::atomic<float> attack = 10;//This should be changeable (range from 0.01 to 20)
+std::atomic<float> decay = 1;//This should be changeable (range from 0.01 to 20)
+std::atomic<float> sustain = 0.0;//This should be changeable (range from 0 to 1)
+std::atomic<float> release = 1;//This should be changeable (range from 0.01 to 20)
+int adsrState = 0;//Not changeable
+float oscAmpMultiplier = 0;//Not changeable
 
 
-
-
+//FILTER PARAMETERS
+std::atomic<float> cutoff = 440; //This should be changeable (range from 1 to 20,000)
+std::atomic<float> q = 1; //This should be changeable (range from 0 to 10)
+std::atomic<float> filterType = 1; //This should be changeable (range from -1 to 1)
+std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4)
+float biqCoefs[5] = { 0,0,0,0,0 };//Not changeable
+//float filterOutReg[channelCount][2] = { 0,0 };//Not changeable
+//float filterInReg[channelCount][3] = { 0,0,0, };//Not changeable
+std::vector<std::vector<float>> filterOutReg(channelCount, std::vector<float>(2, 0)); //Creates a 2d vector storing the filter's output registers for each channel. Not changeable.
+std::vector<std::vector<float>> filterInReg(channelCount, std::vector<float>(3, 0));
 
 
 // This loop is called by the audio device once per buffer. It generates audio data in batches and writes it to the buffer.
 int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
     double streamTime, RtAudioStreamStatus status, void* userData)
 {
-    double* buffer = (double*)outputBuffer;
+    double* buffer = (double*)outputBuffer; //I think this could be a float instead of a double. Will try that later.
     double* lastValues = (double*)userData;
 
     if (status)
@@ -71,11 +87,13 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
     keyInputManager(); //deals with the keyboard input
     noteSetter(); //sets the osc frequency based on the note selected
 
-	oscPhase = oscillator(buffer, nBufferFrames, channelCount, oscFreq, oscType, oscAmp, oscPhase); //This is where the oscillator method is called. The buffer is filled with the audio data generated by the oscillator. The phase is updated by the oscillator method and returned to the main loop.
+	oscPhase = oscillator(buffer, nBufferFrames, channelCount, oscFreq, oscType, oscAmp, oscPhase); //This is where the oscillator method is called.
+    //The buffer is filled with the audio data generated by the oscillator. The phase is updated by the oscillator method and returned to the main loop.
 
     envelope(buffer, nBufferFrames, channelCount, sampRate, attack, decay, sustain, release, adsrState);
 
-
+    biquadCoefs(sampRate, cutoff, q, filterType, biqCoefs); //Sets the coefficients used to calculate the filter output
+    //filter(buffer, nBufferFrames, channelCount, sampRate, biqCoefs);
 
     return 0;
 }
