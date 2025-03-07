@@ -92,21 +92,21 @@ void envelope(double* buffer, int buffSize, int channels, int sampleRate, float 
 
 					}
 					else {
-						adsrState = 1;
+						adsrState = 3;
 						
 					}
 				}
-				if (adsrState == 1) { // decay stage. NOTE: this doesn't work for some reason. If you can figure out why, I will give you a cookie.
-					if (oscAmpMultiplier > sustain) {
-						oscAmpMultiplier -= 1 / decay;
+				//if (adsrState == 1) { // decay stage. NOTE: this doesn't work for some reason. If you can figure out why, I will give you a cookie.
+				//	if (oscAmpMultiplier > sustain) {
+				//		oscAmpMultiplier -= 1 / decay;
 
-					}
-					else {
-						wxLogStatus("AHHHHHHHHHHHHHHH");
-						oscAmpMultiplier = sustain;
-						adsrState = 2;
-					}
-				}
+				//	}
+				//	else {
+				//		wxLogStatus("AHHHHHHHHHHHHHHH");
+				//		oscAmpMultiplier = sustain;
+				//		adsrState = 2;
+				//	}
+				//}
 				if (adsrState == 3) { // release stage
 					if (oscAmpMultiplier > 0) {
 						oscAmpMultiplier -= 1 / release;

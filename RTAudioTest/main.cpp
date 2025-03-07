@@ -58,7 +58,7 @@ std::atomic<float> oscPhaseOffset = 0.0; //This should be changeable
 std::atomic<float> attack = 10;//This should be changeable (range from 0.01 to 20)
 std::atomic<float> decay = 1;//This should be changeable (range from 0.01 to 20)
 std::atomic<float> sustain = 1;//This should be changeable (range from 0 to 1)
-std::atomic<float> release = 1;//This should be changeable (range from 0.01 to 20)
+std::atomic<float> release = 10;//This should be changeable (range from 0.01 to 20)
 int adsrState = 0;//Not changeable
 float oscAmpMultiplier = 0;//Not changeable
 
@@ -93,7 +93,7 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
     envelope(buffer, nBufferFrames, channelCount, sampRate, attack, decay, sustain, release, adsrState);
 
     biquadCoefs(sampRate, cutoff, q, filterType, biqCoefs); //Sets the coefficients used to calculate the filter output
-    //filter(buffer, nBufferFrames, channelCount, sampRate, biqCoefs);
+    filter(buffer, nBufferFrames, channelCount, sampRate, biqCoefs);
 
     return 0;
 }
