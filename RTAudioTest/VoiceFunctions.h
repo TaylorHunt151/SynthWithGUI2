@@ -30,7 +30,7 @@ public:
 	}
 
 	//OSCILLATOR PARAMETERS
-	std::atomic<int> oscType = 1;//This should be changeable via dropdown menu
+	std::atomic<int> oscType = 2;//This should be changeable via dropdown menu
 	std::atomic<double> oscAmp = 1.0;//This should be changeable via knob/slider, range 0 to 1.
 	std::atomic<double> oscPhaseOffset = 0.0; //This should be changeable, range -1 to 1
 	double oscFreq = 220;//Don't change this. This is set by KeyInputManager.h
@@ -44,6 +44,7 @@ public:
 				for (int j = 0; j < channels; j++)
 				{
 					localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * oscFreq * oscPhase); //Calculates sine wave values
+					localBuff[i * channels + j] /= 16;
 					oscPhase += 1.0 / 44100.0; //Keeps track of the phase
 					if (oscPhase >= 1.0) {
 						oscPhase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
@@ -56,6 +57,7 @@ public:
 				for (int j = 0; j < channels; j++)
 				{
 					localBuff[i * channels + j] = oscAmp * (oscPhase < 0.5 ? 1 : -1); //Calculates square wave values
+					localBuff[i * channels + j] /= 16;
 
 
 					oscPhase += oscFreq / 44100.0; //Keeps track of the phase
@@ -70,6 +72,7 @@ public:
 				for (int j = 0; j < channels; j++)
 				{
 					localBuff[i * channels + j] = oscAmp * (2 * oscPhase - 1); //Calculates sawtooth wave values
+					localBuff[i * channels + j] /= 16;
 					oscPhase += oscFreq / 44100.0; //Keeps track of the phase
 					if (oscPhase >= 1.0) {
 						oscPhase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
@@ -81,6 +84,7 @@ public:
 			for (int i = 0; i < buffSize; i++) {
 				for (int j = 0; j < channels; j++) {
 					localBuff[i * channels + j] = oscAmp * (2 * abs(2 * oscPhase - 1) - 1); // Calculates triangle wave values
+					localBuff[i * channels + j] /= 16;
 					oscPhase += oscFreq / 44100.0; // Keeps track of the phase
 					if (oscPhase >= 1.0) {
 						oscPhase = 0; // This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
@@ -93,6 +97,7 @@ public:
 			for (int i = 0; i < buffSize; i++) {
 				for (int j = 0; j < channels; j++) {
 					localBuff[i * channels + j] = oscAmp * (distribution(generator) * 2 - 1); //Generates random numbers between -1 and 1 to create noise.
+					localBuff[i * channels + j] /= 16;
 					//Noise is useful for making percussive sounds and ambience.
 				}
 			}
@@ -102,7 +107,7 @@ public:
 
 
 	//ENVELOPE PARAMETERS
-	std::atomic<double> attack = 1;//This should be changeable (range from 0.01 to 20)
+	std::atomic<double> attack = 10;//This should be changeable (range from 0.01 to 20)
 	std::atomic<double> decay = 1;//This should be changeable (range from 0.01 to 20)
 	std::atomic<double> sustain = 0.1;//This should be changeable (range from 0 to 1)
 	std::atomic<double> release = 1;//This should be changeable (range from 0.01 to 20)
@@ -159,11 +164,12 @@ public:
 	}
 
 	//FILTER PARAMETERS
-	std::atomic<double> cutoff = 220; //This should be changeable (range from 1 to 20,000)
+	std::atomic<double> cutoffSet = 220; //This should be changeable (range from 1 to 20,000, default 220. Scaled exponentially)
 	std::atomic<double> q = 1; //This should be changeable (range from 0 to 10)
 	std::atomic<double> filterType = 1; //This should be changeable (range from -1 to 1)
 	std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
-	std::atomic<bool> keyTrack = false;
+	std::atomic<bool> keyTrack = true;
+	double cutoff = cutoffSet;
 	double biqCoefs[5] = { 0,0,0,0,0 };//Not changeable
 
 
@@ -188,6 +194,7 @@ public:
 			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}
+
 
 	}
 

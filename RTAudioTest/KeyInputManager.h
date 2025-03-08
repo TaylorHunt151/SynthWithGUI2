@@ -14,6 +14,7 @@ extern double oscFreq;
 extern voice* voices;
 int voiceIndex = 0;
 std::mutex keyInputMutex;
+extern int voiceCount;
 
 class KeyInputManager : public wxEvtHandler {
 public:
@@ -57,119 +58,119 @@ void noteSetter(int oscNum) { //This sets the frequency of the oscillator. If no
 
 	switch (noteSet[oscNum]) {
 		case 'Z':
-			voices[oscNum].oscFreq = 3 * 65.41;
+			voices[oscNum].oscFreq = 65.41;
 
 			break;
 		case 'S':
-			voices[oscNum].oscFreq = 3 * 69.3;
+			voices[oscNum].oscFreq = 69.3;
 
 			break;
 		case 'X':
-			voices[oscNum].oscFreq = 3 * 73.42;
+			voices[oscNum].oscFreq = 73.42;
 
 			break;
 		case 'D':
-			voices[oscNum].oscFreq = 3 * 77.78;
+			voices[oscNum].oscFreq = 77.78;
 
 			break;
 		case 'C':
-			voices[oscNum].oscFreq = 3 * 82.41;
+			voices[oscNum].oscFreq = 82.41;
 
 			break;
 		case 'V':
-			voices[oscNum].oscFreq = 3 * 87.31;
+			voices[oscNum].oscFreq = 87.31;
 
 			break;
 		case 'G':
-			voices[oscNum].oscFreq = 3 * 92.5;
+			voices[oscNum].oscFreq = 92.5;
 
 			break;
 		case 'B':
-			voices[oscNum].oscFreq = 3 * 98;
+			voices[oscNum].oscFreq = 98;
 
 			break;
 		case 'H':
-			voices[oscNum].oscFreq = 3 * 103.83;
+			voices[oscNum].oscFreq = 103.83;
 
 			break;
 		case 'N':
-			voices[oscNum].oscFreq = 3 * 110;
+			voices[oscNum].oscFreq = 110;
 
 			break;
 		case 'J':
-			voices[oscNum].oscFreq = 3 * 116.54;
+			voices[oscNum].oscFreq = 116.54;
 
 			break;
 		case 'M':
-			voices[oscNum].oscFreq = 3 * 123.47;
+			voices[oscNum].oscFreq = 123.47;
 
 			break;
 		case 'Q':
-			voices[oscNum].oscFreq = 3 * 130.81;
+			voices[oscNum].oscFreq = 130.81;
 
 			break;
 		case '2':
-			voices[oscNum].oscFreq = 3 * 138.59;
+			voices[oscNum].oscFreq = 138.59;
 
 			break;
 		case 'W':
-			voices[oscNum].oscFreq = 3 * 146.83;
+			voices[oscNum].oscFreq = 146.83;
 
 			break;
 		case '3':
-			voices[oscNum].oscFreq = 3 * 155.56;
+			voices[oscNum].oscFreq = 155.56;
 
 			break;
 		case 'E':
-			voices[oscNum].oscFreq = 3 * 164.81;
+			voices[oscNum].oscFreq = 164.81;
 
 			break;
 		case 'R':
-			voices[oscNum].oscFreq = 3 * 174.61;
+			voices[oscNum].oscFreq = 174.61;
 
 			break;
 		case '5':
-			voices[oscNum].oscFreq = 3 * 185;
+			voices[oscNum].oscFreq = 185;
 
 			break;
 		case 'T':
-			voices[oscNum].oscFreq = 3 * 196;
+			voices[oscNum].oscFreq = 196;
 
 			break;
 		case '6':
-			voices[oscNum].oscFreq = 3 * 207.65;
+			voices[oscNum].oscFreq = 207.65;
 
 			break;
 		case 'Y':
-			voices[oscNum].oscFreq = 3 * 220;
+			voices[oscNum].oscFreq = 220;
 
 			break;
 		case '7':
-			voices[oscNum].oscFreq = 3 * 233.08;
+			voices[oscNum].oscFreq = 233.08;
 
 			break;
 		case 'U':
-			voices[oscNum].oscFreq = 3 * 246.94;
+			voices[oscNum].oscFreq = 246.94;
 
 			break;
 		case 'I':
-			voices[oscNum].oscFreq = 3 * 261.63;
+			voices[oscNum].oscFreq = 261.63;
 
 			break;
 		case '9':
-			voices[oscNum].oscFreq = 3 * 277.78;
+			voices[oscNum].oscFreq = 277.78;
 
 			break;
 		case 'O':
-			voices[oscNum].oscFreq = 3 * 293.66;
+			voices[oscNum].oscFreq = 293.66;
 
 			break;
 		case '0':
-			voices[oscNum].oscFreq = 3 * 311.13;
+			voices[oscNum].oscFreq = 311.13;
 
 			break;
 		case 'P':
-			voices[oscNum].oscFreq = 3 * 329.63;
+			voices[oscNum].oscFreq = 329.63;
 
 			break;
 
@@ -179,7 +180,10 @@ void noteSetter(int oscNum) { //This sets the frequency of the oscillator. If no
 			break;
 
 		}
-		//if (keyTrack) {
-		//	cutoff.store(oscFreq);
-		//}
+
+		for (int i = 0; i < voiceCount; i++) {
+			if (voices[i].keyTrack) {
+				voices[i].cutoff = (voices[i].oscFreq - 220) + voices[i].cutoffSet;
+			}
+		}
 }
