@@ -4,8 +4,8 @@
 //extern int adsrState;
 extern std::atomic<int> bufferSize;
 
-extern std::vector<std::vector<float>> filterOutReg;
-extern std::vector<std::vector<float>> filterInReg;
+extern std::vector<std::vector<double>> filterOutReg;
+extern std::vector<std::vector<double>> filterInReg;
 extern int channelCount;
 
 //Initialize random generator
@@ -17,24 +17,24 @@ class voice {
 public:
 
 	//LOCAL BUFFER
-	std::vector<float> localBuff; //local buffer for any given voice. All the voice buffers get added together in the end.
+	std::vector<double> localBuff; //local buffer for any given voice. All the voice buffers get added together in the end.
 
 	//FILTER REGISTERS
-	std::vector<std::vector<float>> filterOutReg; //Creates a 2d vector storing the filter's output registers for each channel. Not changeable.
-	std::vector<std::vector<float>> filterInReg;
+	std::vector<std::vector<double>> filterOutReg; //Creates a 2d vector storing the filter's output registers for each channel. Not changeable.
+	std::vector<std::vector<double>> filterInReg;
 
 	voice() { //initializer. Resizes important vectors to the correct sizes
 		localBuff.resize((bufferSize.load() * channelCount),0);
-		filterOutReg.resize(channelCount, std::vector<float>(2, 0));
-        filterInReg.resize(channelCount, std::vector<float>(3, 0));
+		filterOutReg.resize(channelCount, std::vector<double>(2, 0));
+        filterInReg.resize(channelCount, std::vector<double>(3, 0));
 	}
 
 	//OSCILLATOR PARAMETERS
 	std::atomic<int> oscType = 1;//This should be changeable via dropdown menu
-	std::atomic<float> oscAmp = 1.0;//This should be changeable via knob/slider, range 0 to 1.
-	std::atomic<float> oscPhaseOffset = 0.0; //This should be changeable, range -1 to 1
-	float oscFreq = 220;//Don't change this. This is set by KeyInputManager.h
-	float oscPhase = 0.0; //DON'T CHANGE THIS
+	std::atomic<double> oscAmp = 1.0;//This should be changeable via knob/slider, range 0 to 1.
+	std::atomic<double> oscPhaseOffset = 0.0; //This should be changeable, range -1 to 1
+	double oscFreq = 220;//Don't change this. This is set by KeyInputManager.h
+	double oscPhase = 0.0; //DON'T CHANGE THIS
 
 	void oscillator(int buffSize, int channels) {
 
@@ -102,19 +102,19 @@ public:
 
 
 	//ENVELOPE PARAMETERS
-	std::atomic<float> attack = 1;//This should be changeable (range from 0.01 to 20)
-	std::atomic<float> decay = 1;//This should be changeable (range from 0.01 to 20)
-	std::atomic<float> sustain = 1;//This should be changeable (range from 0 to 1)
-	std::atomic<float> release = 1;//This should be changeable (range from 0.01 to 20)
+	std::atomic<double> attack = 1;//This should be changeable (range from 0.01 to 20)
+	std::atomic<double> decay = 1;//This should be changeable (range from 0.01 to 20)
+	std::atomic<double> sustain = 0.1;//This should be changeable (range from 0 to 1)
+	std::atomic<double> release = 1;//This should be changeable (range from 0.01 to 20)
 	int oscAmpGoal = 0;
 	int adsrState = 0;//Not changeable
-	float oscAmpMultiplier = 0;//Not changeable
+	double oscAmpMultiplier = 0;//Not changeable
 
 	void envelope(int buffSize, int channels, int sampleRate) {
-		float atk = attack.load();
-		float dec = decay.load();
-		float sus = sustain.load();
-		float rel = release.load();
+		double atk = attack.load();
+		double dec = decay.load();
+		double sus = sustain.load();
+		double rel = release.load();
 		atk *= sampleRate;
 		dec *= sampleRate;
 		rel *= sampleRate;
@@ -159,18 +159,18 @@ public:
 	}
 
 	//FILTER PARAMETERS
-	std::atomic<float> cutoff = 220; //This should be changeable (range from 1 to 20,000)
-	std::atomic<float> q = 1; //This should be changeable (range from 0 to 10)
-	std::atomic<float> filterType = 1; //This should be changeable (range from -1 to 1)
+	std::atomic<double> cutoff = 220; //This should be changeable (range from 1 to 20,000)
+	std::atomic<double> q = 1; //This should be changeable (range from 0 to 10)
+	std::atomic<double> filterType = 1; //This should be changeable (range from -1 to 1)
 	std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
-	std::atomic<bool> keyTrack = true;
-	float biqCoefs[5] = { 0,0,0,0,0 };//Not changeable
+	std::atomic<bool> keyTrack = false;
+	double biqCoefs[5] = { 0,0,0,0,0 };//Not changeable
 
 
 	void biquadCoefs(int sampleRate) {
 
-		float w = (2 * 3.14159) * (cutoff / sampleRate);
-		float a = sin(w) / (2 * q);
+		double w = (2 * 3.14159) * (cutoff / sampleRate);
+		double a = sin(w) / (2 * q);
 
 		if (filterType <= 0) {
 			biqCoefs[0] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (a)) / 2) / (1 + a);
@@ -191,7 +191,7 @@ public:
 
 	}
 
-	void filter(int sampleRate) {
+	void biquadFilter() {
 
 		for (int i = 0; i < bufferSize; i++) {
 			for (int j = 0; j < channelCount; j++) {
