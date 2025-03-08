@@ -1,10 +1,10 @@
 #include <wx/wx.h> //GUI library
-#include "RtAudio.h" //Audio library
+#include "RtAudio.h" //Audio library header file
 #include <thread> //This lets you create a new thread to run the audio independent of the GUI
 #include <atomic>  //Allows you to create atomic variables. Atomic variables are special variables that can be read and written to by multiple threads without causing race conditions.
 #include "VoiceFunctions.h" //This header file contains the synth voice class. It will contain the oscillator, envelope, and filter methods that will be used throughout the code.
 #include <windows.h>
-#include "KeyInputManager.h"
+#include "KeyInputManager.h" //Manages keyboard input
 #include "stdc++.h"
 #include <stdio.h>
 #include <vector>
@@ -28,73 +28,58 @@
 // but I left it out for the sake of simplicity and readability. I may change my mind on this later.
 //****************************************************************************************************************************************************************
 
-//GENERAL SYNTH PARAMETERS
+    //GENERAL SYNTH PARAMETERS
 //These parameters require reinitialization of the audio device to be changed.
-std::atomic<int> voices = 16;//This should be changeable via dropdown menu
 std::atomic<int> sampRate = 44100;//This should be changeable via dropdown menu
 std::atomic<int> bufferSize = 256;//This should be changeable via dropdown menu
-int channelCount = 2;//I don't think this should be changeable. I'll decide later
-
 std::atomic<bool> reInit = false; //Set this True if any of the above parameters are changed. This should trigger the audioStart() method and reinitialize the device.
+
+int voiceCount = 16;//This should be changeable via dropdown menu (NOT YET IMPLEMENTED)
+int channelCount = 2;//Not changeable.
 
 
 //KEYBOARD INPUT VARIABLES (NONE OF THESE SHOULD BE CHANGEABLE DIRECTLY VIA THE GUI)
 bool noteHeld[64]; //An array that says whether each note is currently being held down
 std::vector<char> notesHeld; //A vector containing all notes currently being held in order of when they were pressed
-int oscAmpGoal = 0;//Not changeable
-char noteSet = ' ';//Not changeable
 
+//int oscAmpGoal = 0;//Not changeable
+std::vector<char> noteSet(voiceCount);//Not changeable
 
+voice* voices = new voice[voiceCount];  // Dynamically allocate an array of voice objects.
 
-//OSCILLATOR PARAMETERS
-std::atomic<int> oscType = 4;//This should be changeable via dropdown menu
-std::atomic<float> oscAmp = 1.0;//This should be changeable via knob/slider
-std::atomic<float> oscFreq = 220;//This is set by KeyInputManager.h
-std::atomic<float> oscPhase = 0.0; //DON'T CHANGE THIS
-std::atomic<float> oscPhaseOffset = 0.0; //This should be changeable
-
-
-//ENVELOPE PARAMETERS
-std::atomic<float> attack = 10;//This should be changeable (range from 0.01 to 20)
-std::atomic<float> decay = 1;//This should be changeable (range from 0.01 to 20)
-std::atomic<float> sustain = 1;//This should be changeable (range from 0 to 1)
-std::atomic<float> release = 10;//This should be changeable (range from 0.01 to 20)
-int adsrState = 0;//Not changeable
-float oscAmpMultiplier = 0;//Not changeable
-
-
-//FILTER PARAMETERS
-std::atomic<float> cutoff = 440; //This should be changeable (range from 1 to 20,000)
-std::atomic<float> q = 1; //This should be changeable (range from 0 to 10)
-std::atomic<float> filterType = 1; //This should be changeable (range from -1 to 1)
-std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4)
-float biqCoefs[5] = { 0,0,0,0,0 };//Not changeable
-//float filterOutReg[channelCount][2] = { 0,0 };//Not changeable
-//float filterInReg[channelCount][3] = { 0,0,0, };//Not changeable
-std::vector<std::vector<float>> filterOutReg(channelCount, std::vector<float>(2, 0)); //Creates a 2d vector storing the filter's output registers for each channel. Not changeable.
-std::vector<std::vector<float>> filterInReg(channelCount, std::vector<float>(3, 0));
 
 
 // This loop is called by the audio device once per buffer. It generates audio data in batches and writes it to the buffer.
 int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
     double streamTime, RtAudioStreamStatus status, void* userData)
 {
-    double* buffer = (double*)outputBuffer; //I think this could be a float instead of a double. Will try that later.
+    double* buffer = (double*)outputBuffer; //I think this should be a float instead of a double. Will try that later.
     double* lastValues = (double*)userData;
 
     if (status)
         wxLogMessage("System Underflow Detected");
     keyInputManager(); //deals with the keyboard input
-    noteSetter(); //sets the osc frequency based on the note selected
+    for (int i = 0; i < nBufferFrames; i++) {
+        for (int j = 0; j < channelCount; j++) {
+            buffer[i * channelCount + j] = 0;
+        }
+    }
+    for (int i = 0; i < voiceCount; i++) {
 
-	oscPhase = oscillator(buffer, nBufferFrames, channelCount, oscFreq, oscType, oscAmp, oscPhase); //This is where the oscillator method is called.
-    //The buffer is filled with the audio data generated by the oscillator. The phase is updated by the oscillator method and returned to the main loop.
+        noteSetter(i); //sets the osc frequency based on the note selected
 
-    envelope(buffer, nBufferFrames, channelCount, sampRate, attack, decay, sustain, release, adsrState);
+        voices[i].oscillator(nBufferFrames, channelCount); //This is where the oscillator method is called.
+        //The buffer is filled with the audio data generated by the oscillator. The phase is updated by the oscillator method and returned to the main loop.
 
-    biquadCoefs(sampRate, cutoff, q, filterType, biqCoefs); //Sets the coefficients used to calculate the filter output
-    filter(buffer, nBufferFrames, channelCount, sampRate, biqCoefs);
+        voices[i].biquadCoefs(sampRate); //Sets the coefficients used to calculate the filter output
+        //voices[i].filter(sampRate);
 
+        voices[i].envelope(nBufferFrames, channelCount, sampRate);
+        for (int j = 0; j < nBufferFrames * channelCount; j++) {
+            buffer[j] += voices[i].localBuff[j];
+        }
+        
+    }
     return 0;
 }
 
@@ -118,6 +103,7 @@ public:
 private:
     void audioStart() { //Initializes the audio device.
 
+        //voice* voices = new voice[voiceCount];  // Dynamically allocate an array of voice objects.
 
 
         RtAudio dac;
@@ -162,20 +148,20 @@ private:
 	std::atomic<bool> running; //This value is used to stop the audio thread when the program closes. Since the stop() function is called by the App class destructor, it is declared as an atomic to avoic race conditions
 };
 
-enum IDs {
-    BUTTON_ID = 2
-};
-
+//****************************************************************************************************************************************************************
+// BELOW IS THE GUI CODE
+// IT CONTAINS THE ENTRY POINT OF THE PROGRAM
+// THE AUDIO AND GUI MUST BE COMPUTED ON SEPARATE THREADS. OTHERWISE THE AUDIO PROCESSING LOOP WILL NOT RUN.
+//****************************************************************************************************************************************************************
 class App : public wxApp {
 public:
 
 
     bool OnInit() { //This is the entry point for the program.
-        wxFrame* window = new wxFrame(NULL, wxID_ANY, "GUI Test", wxDefaultPosition, wxSize(600, 400));
-        wxPanel* panel = new wxPanel(window);
+        wxFrame* window = new wxFrame(NULL, wxID_ANY, "GUI Test", wxDefaultPosition, wxSize(600, 400));//Creates a window
+        wxPanel* panel = new wxPanel(window); //Creates a panel
 
-
-        window->Show();
+        window->Show();//Shows window
 
         audioManager.start();//Starts the audio in a separate thread
 
@@ -191,4 +177,4 @@ private:
     AudioManager audioManager;
 };
 
-wxIMPLEMENT_APP(App);
+wxIMPLEMENT_APP(App); //Initializes the GUI apps

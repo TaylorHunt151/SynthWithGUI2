@@ -1,28 +1,52 @@
 #pragma once
 #include <random>
-extern float oscAmpMultiplier;
-extern int oscAmpGoal;
-extern int adsrState;
+//extern float oscAmpMultiplier;
+//extern int adsrState;
+extern std::atomic<int> bufferSize;
 
 extern std::vector<std::vector<float>> filterOutReg;
 extern std::vector<std::vector<float>> filterInReg;
+extern int channelCount;
 
 //Initialize random generator
 std::default_random_engine generator;
 std::uniform_real_distribution<double> distribution(-1, 1);
 
+class voice {
 
-float oscillator(double *buffer, int buffSize, int channels, float freq, int type, float amp, float phase) {
+public:
 
-	switch (type) {
+	//LOCAL BUFFER
+	std::vector<float> localBuff; //local buffer for any given voice. All the voice buffers get added together in the end.
+
+	//FILTER REGISTERS
+	std::vector<std::vector<float>> filterOutReg; //Creates a 2d vector storing the filter's output registers for each channel. Not changeable.
+	std::vector<std::vector<float>> filterInReg;
+
+	voice() { //initializer. Resizes important vectors to the correct sizes
+		localBuff.resize((bufferSize.load() * channelCount),0);
+		filterOutReg.resize(channelCount, std::vector<float>(2, 0));
+        filterInReg.resize(channelCount, std::vector<float>(3, 0));
+	}
+
+	//OSCILLATOR PARAMETERS
+	std::atomic<int> oscType = 1;//This should be changeable via dropdown menu
+	std::atomic<float> oscAmp = 1.0;//This should be changeable via knob/slider, range 0 to 1.
+	std::atomic<float> oscPhaseOffset = 0.0; //This should be changeable, range -1 to 1
+	float oscFreq = 220;//Don't change this. This is set by KeyInputManager.h
+	float oscPhase = 0.0; //DON'T CHANGE THIS
+
+	void oscillator(int buffSize, int channels) {
+
+		switch (oscType) {
 		case 0: //Sine wave
 			for (int i = 0; i < buffSize; i++) {
 				for (int j = 0; j < channels; j++)
 				{
-					buffer[i * channels + j] = amp * sin(2 * M_PI * freq * phase); //Calculates sine wave values
-					phase += 1.0 / 44100.0; //Keeps track of the phase
-					if (phase >= 1.0) {
-						phase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+					localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * oscFreq * oscPhase); //Calculates sine wave values
+					oscPhase += 1.0 / 44100.0; //Keeps track of the phase
+					if (oscPhase >= 1.0) {
+						oscPhase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
 					}
 				}
 			}
@@ -31,12 +55,12 @@ float oscillator(double *buffer, int buffSize, int channels, float freq, int typ
 			for (int i = 0; i < buffSize; i++) {
 				for (int j = 0; j < channels; j++)
 				{
-					buffer[i * channels + j] = amp * (phase < 0.5 ? 1 : -1); //Calculates square wave values
-					
+					localBuff[i * channels + j] = oscAmp * (oscPhase < 0.5 ? 1 : -1); //Calculates square wave values
 
-					phase += freq / 44100.0; //Keeps track of the phase
-					if (phase >= 1.0) {
-						phase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+
+					oscPhase += oscFreq / 44100.0; //Keeps track of the phase
+					if (oscPhase >= 1.0) {
+						oscPhase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
 					}
 				}
 			}
@@ -45,22 +69,21 @@ float oscillator(double *buffer, int buffSize, int channels, float freq, int typ
 			for (int i = 0; i < buffSize; i++) {
 				for (int j = 0; j < channels; j++)
 				{
-					buffer[i * channels + j] = amp * (2 * phase - 1); //Calculates sawtooth wave values
-					phase += freq / 44100.0; //Keeps track of the phase
-					if (phase >= 1.0) {
-						phase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+					localBuff[i * channels + j] = oscAmp * (2 * oscPhase - 1); //Calculates sawtooth wave values
+					oscPhase += oscFreq / 44100.0; //Keeps track of the phase
+					if (oscPhase >= 1.0) {
+						oscPhase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
 					}
 				}
 			}
 			break;
-		case 3: //Triangle wave
+		case 3: // Triangle wave
 			for (int i = 0; i < buffSize; i++) {
-				for (int j = 0; j < channels; j++)
-				{
-					buffer[i * channels + j] = amp * (2 * abs(2 * phase - 1) - 1); //Calculates triangle wave values
-					phase += freq / 44100.0; //Keeps track of the phase
-					if (phase >= 1.0) {
-						phase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+				for (int j = 0; j < channels; j++) {
+					localBuff[i * channels + j] = oscAmp * (2 * abs(2 * oscPhase - 1) - 1); // Calculates triangle wave values
+					oscPhase += oscFreq / 44100.0; // Keeps track of the phase
+					if (oscPhase >= 1.0) {
+						oscPhase = 0; // This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
 					}
 				}
 			}
@@ -69,110 +92,119 @@ float oscillator(double *buffer, int buffSize, int channels, float freq, int typ
 
 			for (int i = 0; i < buffSize; i++) {
 				for (int j = 0; j < channels; j++) {
-					buffer[i * channels + j] = amp * (distribution(generator) * 2 - 1); //Generates random numbers between -1 and 1 to create noise.
+					localBuff[i * channels + j] = oscAmp * (distribution(generator) * 2 - 1); //Generates random numbers between -1 and 1 to create noise.
 					//Noise is useful for making percussive sounds and ambience.
 				}
 			}
 
+		}
 	}
-	return phase;
-}
-
-void envelope(double* buffer, int buffSize, int channels, int sampleRate, float attack, float decay, float sustain, float release, int adsrState) {
-	attack *= sampleRate;
-	decay *= sampleRate;
-	release *= sampleRate;
-	for (int i = 0; i < buffSize; i++) {
-		for (int j = 0; j < channels; j++) {
-			if (oscAmpGoal == 1) {
-				if (adsrState == 0) { // attack stage
-					if (oscAmpMultiplier < 1) {
-						oscAmpMultiplier += 1 / attack;
 
 
-					}
-					else {
-						adsrState = 3;
-						
-					}
-				}
-				//if (adsrState == 1) { // decay stage. NOTE: this doesn't work for some reason. If you can figure out why, I will give you a cookie.
-				//	if (oscAmpMultiplier > sustain) {
-				//		oscAmpMultiplier -= 1 / decay;
+	//ENVELOPE PARAMETERS
+	std::atomic<float> attack = 1;//This should be changeable (range from 0.01 to 20)
+	std::atomic<float> decay = 1;//This should be changeable (range from 0.01 to 20)
+	std::atomic<float> sustain = 1;//This should be changeable (range from 0 to 1)
+	std::atomic<float> release = 1;//This should be changeable (range from 0.01 to 20)
+	int oscAmpGoal = 0;
+	int adsrState = 0;//Not changeable
+	float oscAmpMultiplier = 0;//Not changeable
 
-				//	}
-				//	else {
-				//		wxLogStatus("AHHHHHHHHHHHHHHH");
-				//		oscAmpMultiplier = sustain;
-				//		adsrState = 2;
-				//	}
-				//}
-				if (adsrState == 3) { // release stage
-					if (oscAmpMultiplier > 0) {
-						oscAmpMultiplier -= 1 / release;
-						if (oscAmpMultiplier < 0) {
-							oscAmpMultiplier = 0;
+	void envelope(int buffSize, int channels, int sampleRate) {
+		float atk = attack.load();
+		float dec = decay.load();
+		float sus = sustain.load();
+		float rel = release.load();
+		atk *= sampleRate;
+		dec *= sampleRate;
+		rel *= sampleRate;
+		for (int i = 0; i < buffSize; i++) {
+			for (int j = 0; j < channels; j++) {
+				if (oscAmpGoal == 1) {
+					if (adsrState == 0) { // attack stage
+						if (oscAmpMultiplier < 1) {
+							oscAmpMultiplier += 1 / atk;
+						}
+						else {
+							adsrState = 1;
 						}
 					}
-				}
-			}
-			else {
-				if (adsrState == 3) { // release stage
-					if (oscAmpMultiplier > 0) {
-						oscAmpMultiplier -= 1 / release;
-						if (oscAmpMultiplier < 0) {
-							oscAmpMultiplier = 0;
+					if (adsrState == 1) { // decay stage
+						if (oscAmpMultiplier > sus) {
+							oscAmpMultiplier -= (1 - sus) / dec;
 						}
+						else {
+							oscAmpMultiplier = sus;
+							adsrState = 2;
+						}
+					}
+					if (adsrState == 2) { // sustain stage
+						oscAmpMultiplier = sus;
 					}
 				}
 				else {
-					oscAmpMultiplier = 0;
+					if (adsrState != 3) {
+						adsrState = 3; // release stage
+					}
+					if (oscAmpMultiplier > 0) {
+						oscAmpMultiplier -= 1 / rel;
+						if (oscAmpMultiplier < 0) {
+							oscAmpMultiplier = 0;
+						}
+					}
 				}
-			}
-
-			buffer[i * channels + j] *= oscAmpMultiplier;
-
+				localBuff[i * channels + j] *= oscAmpMultiplier;
 			}
 		}
 	}
-	
-void biquadCoefs(int sampleRate, float cutoff, float q, float filterType, float *coefs) {
 
-	float w = (2 * 3.14159) * (cutoff / sampleRate);
-	float a = sin(w) / (2 * q);
+	//FILTER PARAMETERS
+	std::atomic<float> cutoff = 220; //This should be changeable (range from 1 to 20,000)
+	std::atomic<float> q = 1; //This should be changeable (range from 0 to 10)
+	std::atomic<float> filterType = 1; //This should be changeable (range from -1 to 1)
+	std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
+	std::atomic<bool> keyTrack = true;
+	float biqCoefs[5] = { 0,0,0,0,0 };//Not changeable
 
-	if (filterType <= 0) {
-		coefs[0] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (a)) / 2) / (1 + a);
-		coefs[1] = (1 - cos(w)) / (1 + a);
-		coefs[2] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (0 - a)) / 2) / (1 + a);
-		//coefs[3] = 1 + a;
-		coefs[3] = (-2 * cos(w)) / (1 + a);
-		coefs[4] = (1 - a) / (1 + a);
-	}
-	else {
-		coefs[0] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (a)) / 2) / (1 + a);
-		coefs[1] = (filterType * (-1 + cos(w))) / (1 + a);
-		coefs[2] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (-a)) / 2) / (1 + a);
-		//coefs[3] = 1 + a;
-		coefs[3] = (-2 * cos(w)) / (1 + a);
-		coefs[4] = (1 - a) / (1 + a);
-	}
 
-}
+	void biquadCoefs(int sampleRate) {
 
-void filter(double* buffer, int buffSize, int channelCount, int sampleRate, float *biqCoefs) {
+		float w = (2 * 3.14159) * (cutoff / sampleRate);
+		float a = sin(w) / (2 * q);
 
-	for (int i = 0; i < buffSize; i++) {
-		for (int j = 0; j < channelCount; j++) {
-			filterInReg[j][2] = filterInReg[j][1];
-			filterInReg[j][1] = filterInReg[j][0];
-			filterInReg[j][0] = buffer[i * channelCount + j];
-
-			buffer[i * channelCount + j] = filterInReg[j][0] * biqCoefs[0] + filterInReg[j][1] * biqCoefs[1] + filterInReg[j][2] * biqCoefs[2] - filterOutReg[j][0] * biqCoefs[3] - filterOutReg[j][1] * biqCoefs[4]; //Filter math equation
-
-			filterOutReg[j][1] = filterOutReg[j][0];
-			filterOutReg[j][0] = buffer[i * channelCount + j];
+		if (filterType <= 0) {
+			biqCoefs[0] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (a)) / 2) / (1 + a);
+			biqCoefs[1] = (1 - cos(w)) / (1 + a);
+			biqCoefs[2] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (0 - a)) / 2) / (1 + a);
+			//biqCoefs[3] = 1 + a;
+			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
+			biqCoefs[4] = (1 - a) / (1 + a);
 		}
+		else {
+			biqCoefs[0] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (a)) / 2) / (1 + a);
+			biqCoefs[1] = (filterType * (-1 + cos(w))) / (1 + a);
+			biqCoefs[2] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (-a)) / 2) / (1 + a);
+			//biqCoefs[3] = 1 + a;
+			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
+			biqCoefs[4] = (1 - a) / (1 + a);
+		}
+
 	}
 
-}
+	void filter(int sampleRate) {
+
+		for (int i = 0; i < bufferSize; i++) {
+			for (int j = 0; j < channelCount; j++) {
+				filterInReg[j][2] = filterInReg[j][1];
+				filterInReg[j][1] = filterInReg[j][0];
+				filterInReg[j][0] = localBuff[i * channelCount + j];
+
+				localBuff[i * channelCount + j] = filterInReg[j][0] * biqCoefs[0] + filterInReg[j][1] * biqCoefs[1] + filterInReg[j][2] * biqCoefs[2] - filterOutReg[j][0] * biqCoefs[3] - filterOutReg[j][1] * biqCoefs[4]; //Filter math equation
+
+				filterOutReg[j][1] = filterOutReg[j][0];
+				filterOutReg[j][0] = localBuff[i * channelCount + j];
+			}
+		}
+
+	}
+};
