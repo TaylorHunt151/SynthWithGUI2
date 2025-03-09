@@ -32,5 +32,8 @@
     <ClInclude Include="stdc++.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Modulators.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

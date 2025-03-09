@@ -146,6 +146,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KeyInputManager.h" />
+    <ClInclude Include="Modulators.h" />
     <ClInclude Include="RtAudio.h" />
     <ClInclude Include="stdc++.h" />
     <ClInclude Include="VoiceFunctions.h" />

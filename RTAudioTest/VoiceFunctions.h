@@ -1,5 +1,6 @@
 #pragma once
 #include <random>
+#include "Modulators.h"
 //extern float oscAmpMultiplier;
 //extern int adsrState;
 extern std::atomic<int> bufferSize;
@@ -7,6 +8,8 @@ extern std::atomic<int> bufferSize;
 extern std::vector<std::vector<double>> filterOutReg;
 extern std::vector<std::vector<double>> filterInReg;
 extern int channelCount;
+
+extern LFO* LFOs;
 
 //Initialize random generator
 std::default_random_engine generator;
@@ -30,8 +33,8 @@ public:
 	}
 
 	//OSCILLATOR PARAMETERS
-	std::atomic<int> oscType = 2;//This should be changeable via dropdown menu
-	std::atomic<double> oscAmp = 1.0;//This should be changeable via knob/slider, range 0 to 1.
+	std::atomic<int> oscType = 3;//This should be changeable via dropdown menu
+	std::atomic<double> oscAmp = 0.1;//This should be changeable via knob/slider, range 0 to 0.1.
 	std::atomic<double> oscPhaseOffset = 0.0; //This should be changeable, range -1 to 1
 	double oscFreq = 220;//Don't change this. This is set by KeyInputManager.h
 	double oscPhase = 0.0; //DON'T CHANGE THIS
@@ -43,7 +46,20 @@ public:
 			for (int i = 0; i < buffSize; i++) {
 				for (int j = 0; j < channels; j++)
 				{
-					localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * oscFreq * oscPhase); //Calculates sine wave values
+					if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
+						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * oscFreq * oscPhase); //Calculates sine wave values
+					}
+					else if (LFOs[0].carrier == 1) {
+						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * (oscFreq * pow(2, LFOs[0].localBuff[i] / 12)) * oscPhase); //Calculates sine wave values
+					}
+					else if (LFOs[1].carrier == 1) {
+						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * (oscFreq * pow(2, LFOs[1].localBuff[i] / 12)) * oscPhase); //Calculates sine wave values
+
+					}
+					else {
+						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * oscFreq * oscPhase); //Calculates sine wave values
+
+					}
 					localBuff[i * channels + j] /= 16;
 					oscPhase += 1.0 / 44100.0; //Keeps track of the phase
 					if (oscPhase >= 1.0) {
@@ -57,10 +73,25 @@ public:
 				for (int j = 0; j < channels; j++)
 				{
 					localBuff[i * channels + j] = oscAmp * (oscPhase < 0.5 ? 1 : -1); //Calculates square wave values
+
+
 					localBuff[i * channels + j] /= 16;
 
 
-					oscPhase += oscFreq / 44100.0; //Keeps track of the phase
+					if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
+						oscPhase += (oscFreq * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12))/ 44100.0; //Keeps track of the phase
+					}
+					else if (LFOs[0].carrier == 1) {
+						oscPhase += (oscFreq * pow(2, LFOs[0].localBuff[i] / 12 )) / 44100.0; //Keeps track of the phase
+					}
+					else if (LFOs[1].carrier == 1) {
+						oscPhase += (oscFreq * pow(2, LFOs[1].localBuff[i] / 12 )) / 44100.0; //Keeps track of the phase
+					}
+					else {
+						oscPhase += oscFreq / 44100.0; //Keeps track of the phase
+
+					}
+
 					if (oscPhase >= 1.0) {
 						oscPhase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
 					}
@@ -73,7 +104,20 @@ public:
 				{
 					localBuff[i * channels + j] = oscAmp * (2 * oscPhase - 1); //Calculates sawtooth wave values
 					localBuff[i * channels + j] /= 16;
-					oscPhase += oscFreq / 44100.0; //Keeps track of the phase
+					if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
+						oscPhase += (oscFreq * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
+					}
+					else if (LFOs[0].carrier == 1) {
+						oscPhase += (oscFreq * pow(2, LFOs[0].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+					}
+					else if (LFOs[1].carrier == 1) {
+						oscPhase += (oscFreq * pow(2, LFOs[1].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+					}
+					else {
+						oscPhase += oscFreq / 44100.0; //Keeps track of the phase
+
+					}
+
 					if (oscPhase >= 1.0) {
 						oscPhase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
 					}
@@ -85,7 +129,19 @@ public:
 				for (int j = 0; j < channels; j++) {
 					localBuff[i * channels + j] = oscAmp * (2 * abs(2 * oscPhase - 1) - 1); // Calculates triangle wave values
 					localBuff[i * channels + j] /= 16;
-					oscPhase += oscFreq / 44100.0; // Keeps track of the phase
+					if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
+						oscPhase += (oscFreq * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
+					}
+					else if (LFOs[0].carrier == 1) {
+						oscPhase += (oscFreq * pow(2, LFOs[0].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+					}
+					else if (LFOs[1].carrier == 1) {
+						oscPhase += (oscFreq * pow(2, LFOs[1].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+					}
+					else {
+						oscPhase += oscFreq / 44100.0; //Keeps track of the phase
+
+					}
 					if (oscPhase >= 1.0) {
 						oscPhase = 0; // This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
 					}
@@ -111,7 +167,7 @@ public:
 	std::atomic<double> decay = 1;//This should be changeable (range from 0.01 to 20)
 	std::atomic<double> sustain = 0.1;//This should be changeable (range from 0 to 1)
 	std::atomic<double> release = 1;//This should be changeable (range from 0.01 to 20)
-	int oscAmpGoal = 0;
+	int oscAmpGoal = 0;//not changeable
 	int adsrState = 0;//Not changeable
 	double oscAmpMultiplier = 0;//Not changeable
 
@@ -214,4 +270,6 @@ public:
 		}
 
 	}
+
+
 };
