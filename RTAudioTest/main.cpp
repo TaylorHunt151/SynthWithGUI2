@@ -29,11 +29,11 @@
 // but I left it out for the sake of simplicity and readability. I may change my mind on this later.
 //****************************************************************************************************************************************************************
 
-    //GENERAL SYNTH PARAMETERS
+//GENERAL SYNTH PARAMETERS
 //These parameters require reinitialization of the audio device to be changed.
-std::atomic<int> sampRate = 44100;//This should be changeable via dropdown menu
-std::atomic<int> bufferSize = 32;//This should be changeable via dropdown menu
-std::atomic<bool> reInit = false; //Set this True if any of the above parameters are changed. This should trigger the audioStart() method and reinitialize the device.
+std::atomic<int> sampRate = 44100;//This should be changeable via dropdown menu. DON'T ADD A UI ELEMENT FOR THIS YET
+std::atomic<int> bufferSize = 32;//This should be changeable via dropdown menu. DON'T ADD A UI ELEMENT FOR THIS YET
+std::atomic<bool> reInit = false; //Set this True if any of the above parameters are changed. This should trigger the audioStart() method and reinitialize the device. DON'T ADD A UI ELEMENT FOR THIS YET
 
 int voiceCount = 16;//This should be changeable via dropdown menu (NOT YET IMPLEMENTED)
 int channelCount = 2;//Not changeable.
@@ -158,7 +158,7 @@ private:
     }
 
 	std::thread audioThread; //Create a new thread to run the audio independent of the GUI
-	std::atomic<bool> running; //This value is used to stop the audio thread when the program closes. Since the stop() function is called by the App class destructor, it is declared as an atomic to avoic race conditions
+	std::atomic<bool> running; //This value is used to stop the audio thread when the program closes. Since the stop() function is called by the App class destructor, it is declared as an atomic to avoic race conditions. DON'T ADD A UI ELEMENT FOR THIS
 };
 
 //****************************************************************************************************************************************************************

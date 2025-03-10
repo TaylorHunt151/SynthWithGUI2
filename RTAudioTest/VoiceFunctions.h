@@ -1,8 +1,7 @@
 #pragma once
 #include <random>
 #include "Modulators.h"
-//extern float oscAmpMultiplier;
-//extern int adsrState;
+
 extern std::atomic<int> bufferSize;
 
 extern std::vector<std::vector<double>> filterOutReg;

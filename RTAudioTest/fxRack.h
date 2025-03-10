@@ -8,7 +8,7 @@
 // NOTE: The designs of all these effects are heavily influenced by the book Designing Audio Effect Plugins in C++ by Will C. Pirkle.
 
 extern int channelCount;
-extern std::atomic<int> bufferSize;
+extern std::atomic<int> bufferSize; //Dont add a UI element for this
 
 class Delay {
 public:
@@ -267,9 +267,9 @@ public:
 
 class Distortion{
 public:
-	std::atomic<bool> on = true; // Turns delay on or off. Controlled via checkbox in GUI.
+	std::atomic<bool> on = true; // Turns distortion on or off. Controlled via checkbox in GUI.
 	std::atomic<double> wetMix = .125; // Controls how loud the distorted signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI.
-	std::atomic<double> drive = .1;//Drives the distortion into the distortion algorithm. Ranges from 0.01 to 1. Controlled via knob/slider in GUI
+	std::atomic<double> drive = .1;//Drives the signal into the distortion algorithm. Ranges from 0.01 to 1. Controlled via knob/slider in GUI
 	std::atomic<int> type = 1; // Ranges from 0 to 3 (or more, will decide later). Controlled via dropdown menu in GUI.
 
 	std::vector<double> tap; // Vector that stores the delayed signal.
@@ -284,10 +284,10 @@ public:
 	double biqCoefs[5] = { 0,0,0,0,0 };//Not changeable
 
 	std::vector<std::vector<double>> filterOutReg; //Creates a 2d vector storing the filter's output registers for each channel. Not changeable.
-	std::vector<std::vector<double>> filterInReg;
+	std::vector<std::vector<double>> filterInReg; //Creates a 2d vector for the filter's input registers
 
 
-	Distortion() {
+	Distortion() { //Initializes distortion attributes
 		tempBuffer.resize(bufferSize.load() * channelCount);
 		filterOutReg.resize(channelCount, std::vector<double>(2, 0));
 		filterInReg.resize(channelCount, std::vector<double>(3, 0));
