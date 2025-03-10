@@ -47,17 +47,17 @@ public:
 				for (int j = 0; j < channels; j++)
 				{
 					if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
-						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * oscFreq * oscPhase); //Calculates sine wave values
+						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * oscFreq * (oscPhase + oscPhaseOffset)); //Calculates sine wave values
 					}
 					else if (LFOs[0].carrier == 1) {
-						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * (oscFreq * pow(2, LFOs[0].localBuff[i] / 12)) * oscPhase); //Calculates sine wave values
+						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * (oscFreq * pow(2, LFOs[0].localBuff[i] / 12)) * (oscPhase+oscPhaseOffset)); //Calculates sine wave values
 					}
 					else if (LFOs[1].carrier == 1) {
-						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * (oscFreq * pow(2, LFOs[1].localBuff[i] / 12)) * oscPhase); //Calculates sine wave values
+						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * (oscFreq * pow(2, LFOs[1].localBuff[i] / 12)) * (oscPhase + oscPhaseOffset)); //Calculates sine wave values
 
 					}
 					else {
-						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * oscFreq * oscPhase); //Calculates sine wave values
+						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * oscFreq * (oscPhase + oscPhaseOffset)); //Calculates sine wave values
 
 					}
 					localBuff[i * channels + j] /= 16;
@@ -72,7 +72,7 @@ public:
 			for (int i = 0; i < buffSize; i++) {
 				for (int j = 0; j < channels; j++)
 				{
-					localBuff[i * channels + j] = oscAmp * (oscPhase < 0.5 ? 1 : -1); //Calculates square wave values
+					localBuff[i * channels + j] = oscAmp * ((oscPhase + oscPhaseOffset) < 0.5 ? 1 : -1); //Calculates square wave values
 
 
 					localBuff[i * channels + j] /= 16;
@@ -102,7 +102,7 @@ public:
 			for (int i = 0; i < buffSize; i++) {
 				for (int j = 0; j < channels; j++)
 				{
-					localBuff[i * channels + j] = oscAmp * (2 * oscPhase - 1); //Calculates sawtooth wave values
+					localBuff[i * channels + j] = oscAmp * (2 * (oscPhase + oscPhaseOffset) - 1); //Calculates sawtooth wave values
 					localBuff[i * channels + j] /= 16;
 					if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
 						oscPhase += (oscFreq * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
@@ -127,7 +127,7 @@ public:
 		case 3: // Triangle wave
 			for (int i = 0; i < buffSize; i++) {
 				for (int j = 0; j < channels; j++) {
-					localBuff[i * channels + j] = oscAmp * (2 * abs(2 * oscPhase - 1) - 1); // Calculates triangle wave values
+					localBuff[i * channels + j] = oscAmp * (2 * abs(2 * (oscPhase + oscPhaseOffset) - 1) - 1); // Calculates triangle wave values
 					localBuff[i * channels + j] /= 16;
 					if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
 						oscPhase += (oscFreq * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
