@@ -149,7 +149,7 @@ public:
 class Reverb { //this reverb sounds terrible
 public:
 	std::atomic<bool> on = true; // Turns delay on or off. Controlled via checkbox in GUI.
-	std::atomic<double> delayTime = .01; // Delay time in seconds. Controlled via GUI. Should range from 0.001 to .005.
+	std::atomic<double> delayTime = .03; // Delay time in seconds. Controlled via GUI. Should range from 0.001 to .005.
 	std::atomic<double> wetMix = .25; // Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI.
 	std::atomic<double> distortion = .01;//adds distortion in the feedback loop (after the filter). Range from .01 to 10
 	std::atomic<double> feedback = .92; // Controls delay feedback amount. Controlled via knob/slider in GUI. Range from 0 to 1.
