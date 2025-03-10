@@ -12,6 +12,7 @@
 #include <string>
 #include <random>
 #include "Modulators.h"
+#include "fxRack.h"
 
 
 
@@ -31,7 +32,7 @@
     //GENERAL SYNTH PARAMETERS
 //These parameters require reinitialization of the audio device to be changed.
 std::atomic<int> sampRate = 44100;//This should be changeable via dropdown menu
-std::atomic<int> bufferSize = 128;//This should be changeable via dropdown menu
+std::atomic<int> bufferSize = 32;//This should be changeable via dropdown menu
 std::atomic<bool> reInit = false; //Set this True if any of the above parameters are changed. This should trigger the audioStart() method and reinitialize the device.
 
 int voiceCount = 16;//This should be changeable via dropdown menu (NOT YET IMPLEMENTED)
@@ -41,8 +42,11 @@ int channelCount = 2;//Not changeable.
 voice* voices = new voice[voiceCount];  // Dynamically allocate an array of voice objects.
 LFO* LFOs = new LFO[2];
 KeyInputManager* keyInputManager = new KeyInputManager(); //Creates keyinput manager object.
-
-
+Delay* dly = new Delay();
+Reverb* rvrb = new Reverb();
+Distortion* distortion = new Distortion();
+Flanger* flanger = new Flanger();
+Chorus* chorus = new Chorus();
 
 
 // This loop is called by the audio device once per buffer. It generates audio data in batches and writes it to the buffer.
@@ -64,7 +68,7 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
         LFOs[i].lfoGen();
     }
 
-    for (int i = 0; i < voiceCount; i++) {
+    for (int i = 0; i < voiceCount; i++) { 
 
         //noteSetter(i); //sets the osc frequency based on the note selected
 
@@ -75,12 +79,20 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
         voices[i].biquadFilter();
 
         voices[i].envelope(nBufferFrames, channelCount, sampRate);
-        for (int j = 0; j < nBufferFrames * channelCount; j++) {
+        for (int j = 0; j < nBufferFrames * channelCount; j++) { //adds together all the different voices' outputs
             buffer[j] += voices[i].localBuff[j];
         }
         
     }
+    flanger->flanger(buffer);
+    chorus->chorus(buffer);
+    dly->delay(buffer);
+    rvrb->reverb(buffer);
+    distortion->distort(buffer);
+
+
     return 0;
+
 }
 
 class AudioManager {
@@ -167,7 +179,6 @@ public:
         window->Bind(wxEVT_KEY_DOWN, &KeyInputManager::OnKeyDown, keyInputManager); //Binds key up event
         window->Bind(wxEVT_KEY_UP, &KeyInputManager::OnKeyUp, keyInputManager); //Binds key down event
 
-
         audioManager.start();//Starts the audio in a separate thread
 
         return true;
@@ -179,6 +190,7 @@ public:
     }
 
 private:
+
     AudioManager audioManager;
 };
 

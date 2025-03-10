@@ -35,5 +35,8 @@
     <ClInclude Include="Modulators.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fxRack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

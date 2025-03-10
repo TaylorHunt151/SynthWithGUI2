@@ -163,7 +163,7 @@ public:
 
 
 	//ENVELOPE PARAMETERS
-	std::atomic<double> attack = 10;//This should be changeable (range from 0.01 to 20)
+	std::atomic<double> attack = .01;//This should be changeable (range from 0.01 to 20)
 	std::atomic<double> decay = 1;//This should be changeable (range from 0.01 to 20)
 	std::atomic<double> sustain = 0.1;//This should be changeable (range from 0 to 1)
 	std::atomic<double> release = 1;//This should be changeable (range from 0.01 to 20)

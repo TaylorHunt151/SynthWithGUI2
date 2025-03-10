@@ -145,6 +145,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="fxRack.h" />
     <ClInclude Include="KeyInputManager.h" />
     <ClInclude Include="Modulators.h" />
     <ClInclude Include="RtAudio.h" />
