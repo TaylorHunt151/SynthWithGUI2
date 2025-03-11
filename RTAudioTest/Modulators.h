@@ -7,7 +7,7 @@
 
 
 extern int channelCount;
-extern std::atomic<int> bufferSize;
+extern std::atomic<int> bufferSize; //Don't make a UI element for this
 
 class LFO {
 public: 

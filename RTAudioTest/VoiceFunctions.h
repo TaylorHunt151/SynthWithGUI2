@@ -2,7 +2,7 @@
 #include <random>
 #include "Modulators.h"
 
-extern std::atomic<int> bufferSize;
+extern std::atomic<int> bufferSize; //DON'T ADD A UI ELEMENT FOR THIS
 
 extern std::vector<std::vector<double>> filterOutReg;
 extern std::vector<std::vector<double>> filterInReg;
@@ -32,7 +32,7 @@ public:
 	}
 
 	//OSCILLATOR PARAMETERS
-	std::atomic<int> oscType = 3;//This should be changeable via dropdown menu
+	std::atomic<int> oscType = 3;//This should be changeable via dropdown menu, range 0 to 4
 	std::atomic<double> oscAmp = 0.01;//This should be changeable via knob/slider, range 0 to 0.1.
 	std::atomic<double> oscPhaseOffset = 0.0; //This should be changeable, range -1 to 1
 	std::atomic<double> oscPitchShift = -0.05; //Changeable, from -1 to 1 via knob/slider
@@ -156,7 +156,7 @@ public:
 		}
 	}
 
-	std::atomic<int> osc2Type = 1;//This should be changeable via dropdown menu
+	std::atomic<int> osc2Type = 2;//This should be changeable via dropdown menu, range 0 to 4
 	std::atomic<double> osc2Amp = 0.01;//This should be changeable via knob/slider, range 0 to 0.1.
 	std::atomic<double> osc2PhaseOffset = 0.3; //This should be changeable, range -1 to 1
 	std::atomic<double> osc2PitchShift = .1; //Changeable, from -1 to 1 via knob/slider
@@ -283,6 +283,7 @@ public:
 	std::atomic<double> decay = 1;//This should be changeable (range from 0.01 to 20)
 	std::atomic<double> sustain = 0.1;//This should be changeable (range from 0 to 1)
 	std::atomic<double> release = 1;//This should be changeable (range from 0.01 to 20)
+
 	int oscAmpGoal = 0;//not changeable
 	int adsrState = 0;//Not changeable
 	double oscAmpMultiplier = 0;//Not changeable
@@ -336,7 +337,7 @@ public:
 	}
 
 	//FILTER PARAMETERS
-	std::atomic<double> cutoffSet = 880; //This should be changeable (range from 1 to 20,000, default 220. Scaled exponentially)
+	std::atomic<double> cutoffSet = 220; //This should be changeable (range from 1 to 20,000, default 220. Scaled exponentially)
 	std::atomic<double> q = 1; //This should be changeable (range from 0 to 10)
 	std::atomic<double> filterType = 1; //This should be changeable (range from -1 to 1)
 	std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
