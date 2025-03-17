@@ -49,7 +49,7 @@ public:
 	}
 	void biquadCoefs() { //copied from VoiceFunctions
 
-		double w = (2 * 3.14159) * (cutoff / 44100);
+		double w = (2 * M_PI) * (cutoff / 44100);
 		double a = sin(w) / (2 * q);
 
 		if (filterType <= 0) {
