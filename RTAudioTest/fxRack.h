@@ -2,7 +2,6 @@
 
 #include <atomic>
 #include <vector>
-#include <queue>
 #include <cmath>
 
 //NOTE: The designs of all these effects are heavily influenced by the book Designing Audio Effect Plugins in C++ by Will C. Pirkle.

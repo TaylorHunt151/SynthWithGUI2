@@ -14,7 +14,7 @@
 #include "Modulators.h"
 #include "fxRack.h"
 #include <wx/dcbuffer.h> // Add this include for wxAutoBufferedPaintDC
-
+#include "Goodverb.h"
 
 
 
