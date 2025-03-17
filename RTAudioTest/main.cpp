@@ -161,6 +161,73 @@ private:
 	std::atomic<bool> running; //This value is used to stop the audio thread when the program closes. Since the stop() function is called by the App class destructor, it is declared as an atomic to avoic race conditions. DON'T ADD A UI ELEMENT FOR THIS
 };
 
+class KnobControl : public wxPanel {
+public:
+    KnobControl(wxWindow* parent, wxWindowID id = wxID_ANY, int minValue = 0, int maxValue = 100)
+        : wxPanel(parent, id, wxDefaultPosition, wxSize(60, 60), wxBORDER_SIMPLE),
+        minValue(minValue), maxValue(maxValue), value((minValue + maxValue) / 2), angle(0) {
+
+        SetBackgroundStyle(wxBG_STYLE_PAINT); // Avoid flickering
+        Bind(wxEVT_PAINT, &KnobControl::OnPaint, this);
+        Bind(wxEVT_LEFT_DOWN, &KnobControl::OnMouseDown, this);
+        Bind(wxEVT_MOTION, &KnobControl::OnMouseMove, this);
+        Bind(wxEVT_LEFT_UP, &KnobControl::OnMouseUp, this);
+    }
+
+    int GetValue() const { return value; }
+    void SetValue(int newValue) {
+        if (newValue < minValue) newValue = minValue;
+        if (newValue > maxValue) newValue = maxValue;
+        value = newValue;
+        angle = (value - minValue) * 270.0 / (maxValue - minValue) - 135; // Map value to angle (-135° to 135°)
+        Refresh();
+    }
+
+private:
+    int minValue, maxValue, value;
+    double angle;
+    bool isDragging = false;
+
+    void OnPaint(wxPaintEvent&) {
+        wxAutoBufferedPaintDC dc(this);
+        dc.Clear();
+        dc.SetBrush(*wxLIGHT_GREY_BRUSH);
+        dc.DrawCircle(30, 30, 20); // Draw the knob background
+
+        // Draw indicator line based on angle
+        double radians = angle * M_PI / 180.0;
+        int x = 30 + 15 * cos(radians);
+        int y = 30 - 15 * sin(radians);
+        dc.SetPen(wxPen(*wxBLACK, 2));
+        dc.DrawLine(30, 30, x, y);
+    }
+
+    void OnMouseDown(wxMouseEvent& event) {
+        isDragging = true;
+        CaptureMouse();
+    }
+
+    void OnMouseMove(wxMouseEvent& event) {
+        if (isDragging) {
+            wxPoint pos = event.GetPosition();
+            double newAngle = atan2(30 - pos.y, pos.x - 30) * 180 / M_PI;
+            newAngle = wxClip(newAngle, -135, 135); // Limit rotation
+            angle = newAngle;
+
+            // Map angle to value
+            value = minValue + (angle + 135) * (maxValue - minValue) / 270;
+            Refresh();
+        }
+    }
+
+    void OnMouseUp(wxMouseEvent&) {
+        if (isDragging) {
+            isDragging = false;
+            ReleaseMouse();
+        }
+    }
+};
+
 //****************************************************************************************************************************************************************
 // BELOW IS THE GUI CODE
 // IT CONTAINS THE ENTRY POINT OF THE PROGRAM
@@ -174,6 +241,10 @@ public:
         wxFrame* window = new wxFrame(NULL, wxID_ANY, "GUI Test", wxDefaultPosition, wxSize(600, 400));//Creates a window
         wxPanel* panel = new wxPanel(window); //Creates a panel
 
+	 KnobControl* volumeKnob = new KnobControl(panel, wxID_ANY, 0, 100);
+	 volumeKnob->SetValue(50); // Default value
+
+	    
         window->Show();//Shows window
         window->SetFocus();
 
