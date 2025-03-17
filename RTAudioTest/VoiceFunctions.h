@@ -32,8 +32,8 @@ public:
 	}
 
 	//OSCILLATOR PARAMETERS
-	std::atomic<int> oscType = 3;//This should be changeable via dropdown menu, range 0 to 4
-	std::atomic<double> oscAmp = 0.01;//This should be changeable via knob/slider, range 0 to 0.1.
+	std::atomic<int> oscType = 1;//This should be changeable via dropdown menu, range 0 to 4
+	std::atomic<double> oscAmp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1.
 	std::atomic<double> oscPhaseOffset = 0.0; //This should be changeable, range -1 to 1
 	std::atomic<double> oscPitchShift = -0.05; //Changeable, from -1 to 1 via knob/slider
 
@@ -156,8 +156,8 @@ public:
 		}
 	}
 
-	std::atomic<int> osc2Type = 2;//This should be changeable via dropdown menu, range 0 to 4
-	std::atomic<double> osc2Amp = 0.01;//This should be changeable via knob/slider, range 0 to 0.1.
+	std::atomic<int> osc2Type = 1;//This should be changeable via dropdown menu, range 0 to 4
+	std::atomic<double> osc2Amp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1.
 	std::atomic<double> osc2PhaseOffset = 0.3; //This should be changeable, range -1 to 1
 	std::atomic<double> osc2PitchShift = .1; //Changeable, from -1 to 1 via knob/slider
 
@@ -281,7 +281,7 @@ public:
 	//ENVELOPE PARAMETERS
 	std::atomic<double> attack = .01;//This should be changeable (range from 0.01 to 20)
 	std::atomic<double> decay = 1;//This should be changeable (range from 0.01 to 20)
-	std::atomic<double> sustain = 0.1;//This should be changeable (range from 0 to 1)
+	std::atomic<double> sustain = 0.5;//This should be changeable (range from 0 to 1)
 	std::atomic<double> release = 1;//This should be changeable (range from 0.01 to 20)
 
 	int oscAmpGoal = 0;//not changeable
@@ -349,7 +349,9 @@ public:
 	void biquadCoefs(int sampleRate) { //Finds the coefficients 
 		//NOTE: biquad filters have a unique trait. They can be any type of filter depending on how you set your coefficients.
 		//This means they can be used as lowpass, bandpass, or highpass filters. You can even blend them together to create hybrid filters, which I do below.
-
+		if (cutoff < 30) {
+			cutoff = 30;
+		}
 		double w = (2 * 3.14159) * (cutoff / sampleRate);
 		double a = sin(w) / (2 * q);
 

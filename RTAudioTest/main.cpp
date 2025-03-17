@@ -13,6 +13,7 @@
 #include <random>
 #include "Modulators.h"
 #include "fxRack.h"
+#include <wx/dcbuffer.h> // Add this include for wxAutoBufferedPaintDC
 
 
 
@@ -68,7 +69,7 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
         LFOs[i].lfoGen();
     }
 
-    for (int i = 0; i < voiceCount; i++) { 
+    for (int i = 0; i < voiceCount; i++) {
 
         //noteSetter(i); //sets the osc frequency based on the note selected
 
@@ -83,7 +84,7 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
         for (int j = 0; j < nBufferFrames * channelCount; j++) { //adds together all the different voices' outputs
             buffer[j] += voices[i].localBuff[j];
         }
-        
+
     }
     flanger->flanger(buffer);
     chorus->chorus(buffer);
@@ -127,12 +128,12 @@ private:
         }
 
         RtAudio::StreamParameters parameters;
-		parameters.deviceId = dac.getDefaultOutputDevice(); //Set the device ID to the default output device
-		parameters.nChannels = channelCount; //Set the number of channels to 2 (left and right channel for stereo)
+        parameters.deviceId = dac.getDefaultOutputDevice(); //Set the device ID to the default output device
+        parameters.nChannels = channelCount; //Set the number of channels to 2 (left and right channel for stereo)
         parameters.firstChannel = 0;
-		unsigned int sampleRate = sampRate; // Standard CD quality sample rate
-		unsigned int bufferFrames = bufferSize; // The number of sample frames. Make this higher for less CPU usage, or lower for less latency. This should be changable by the user in the final version. Also, it should be a power of two.
-		double data[2] = { 0, 0 }; //IDK what this does but it was in the example code for the library i downloaded so I'm keeping it for now. I'll remove it if it turns out to be unnecessary.
+        unsigned int sampleRate = sampRate; // Standard CD quality sample rate
+        unsigned int bufferFrames = bufferSize; // The number of sample frames. Make this higher for less CPU usage, or lower for less latency. This should be changable by the user in the final version. Also, it should be a power of two.
+        double data[2] = { 0, 0 }; //IDK what this does but it was in the example code for the library i downloaded so I'm keeping it for now. I'll remove it if it turns out to be unnecessary.
 
         if (dac.openStream(&parameters, NULL, RTAUDIO_FLOAT64, sampleRate,
             &bufferFrames, &audioLoop, (void*)&data)) {
@@ -157,8 +158,75 @@ private:
 
     }
 
-	std::thread audioThread; //Create a new thread to run the audio independent of the GUI
-	std::atomic<bool> running; //This value is used to stop the audio thread when the program closes. Since the stop() function is called by the App class destructor, it is declared as an atomic to avoic race conditions. DON'T ADD A UI ELEMENT FOR THIS
+    std::thread audioThread; //Create a new thread to run the audio independent of the GUI
+    std::atomic<bool> running; //This value is used to stop the audio thread when the program closes. Since the stop() function is called by the App class destructor, it is declared as an atomic to avoic race conditions. DON'T ADD A UI ELEMENT FOR THIS
+};
+
+class KnobControl : public wxPanel {
+public:
+    KnobControl(wxWindow* parent, wxWindowID id = wxID_ANY, int minValue = 0, int maxValue = 100)
+        : wxPanel(parent, id, wxDefaultPosition, wxSize(60, 60), wxBORDER_SIMPLE),
+        minValue(minValue), maxValue(maxValue), value((minValue + maxValue) / 2), angle(0) {
+
+        SetBackgroundStyle(wxBG_STYLE_PAINT); // Avoid flickering
+        Bind(wxEVT_PAINT, &KnobControl::OnPaint, this);
+        Bind(wxEVT_LEFT_DOWN, &KnobControl::OnMouseDown, this);
+        Bind(wxEVT_MOTION, &KnobControl::OnMouseMove, this);
+        Bind(wxEVT_LEFT_UP, &KnobControl::OnMouseUp, this);
+    }
+
+    int GetValue() const { return value; }
+    void SetValue(int newValue) {
+        if (newValue < minValue) newValue = minValue;
+        if (newValue > maxValue) newValue = maxValue;
+        value = newValue;
+        angle = (value - minValue) * 270.0 / (maxValue - minValue) - 135; // Map value to angle (-135° to 135°)
+        Refresh();
+    }
+
+private:
+    int minValue, maxValue, value;
+    double angle;
+    bool isDragging = false;
+
+    void OnPaint(wxPaintEvent&) {
+        wxAutoBufferedPaintDC dc(this);
+        dc.Clear();
+        dc.SetBrush(*wxLIGHT_GREY_BRUSH);
+        dc.DrawCircle(30, 30, 20); // Draw the knob background
+
+        // Draw indicator line based on angle
+        double radians = angle * M_PI / 180.0;
+        int x = 30 + 15 * cos(radians);
+        int y = 30 - 15 * sin(radians);
+        dc.SetPen(wxPen(*wxBLACK, 2));
+        dc.DrawLine(30, 30, x, y);
+    }
+
+    void OnMouseDown(wxMouseEvent& event) {
+        isDragging = true;
+        CaptureMouse();
+    }
+
+    void OnMouseMove(wxMouseEvent& event) {
+        if (isDragging) {
+            wxPoint pos = event.GetPosition();
+            double newAngle = atan2(30 - pos.y, pos.x - 30) * 180 / M_PI;
+            newAngle = wxClip(newAngle, -135, 135); // Limit rotation
+            angle = newAngle;
+
+            // Map angle to value
+            value = minValue + (angle + 135) * (maxValue - minValue) / 270;
+            Refresh();
+        }
+    }
+
+    void OnMouseUp(wxMouseEvent&) {
+        if (isDragging) {
+            isDragging = false;
+            ReleaseMouse();
+        }
+    }
 };
 
 //****************************************************************************************************************************************************************
@@ -173,6 +241,10 @@ public:
     bool OnInit() { //This is the entry point for the program.
         wxFrame* window = new wxFrame(NULL, wxID_ANY, "GUI Test", wxDefaultPosition, wxSize(600, 400));//Creates a window
         wxPanel* panel = new wxPanel(window); //Creates a panel
+
+        KnobControl* volumeKnob = new KnobControl(panel, wxID_ANY, 0, 100);
+        volumeKnob->SetValue(50); // Default value
+
 
         window->Show();//Shows window
         window->SetFocus();
