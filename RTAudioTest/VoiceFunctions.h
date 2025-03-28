@@ -32,7 +32,7 @@ public:
 	}
 
 	//OSCILLATOR PARAMETERS
-	std::atomic<int> oscType = 1;//This should be changeable via dropdown menu, range 0 to 4
+	std::atomic<int> oscType = 3;//This should be changeable via dropdown menu, range 0 to 4
 	std::atomic<double> oscAmp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1.
 	std::atomic<double> oscPhaseOffset = 0.0; //This should be changeable, range -1 to 1
 	std::atomic<double> oscPitchShift = -0.05; //Changeable, from -1 to 1 via knob/slider
@@ -121,10 +121,10 @@ public:
 				}
 			}
 			break;
-		case 3: // Triangle wave
+		case 3: //Triangle wave
 			for (int i = 0; i < buffSize; i++) {
 				for (int j = 0; j < channels; j++) {
-					localBuff[i * channels + j] = oscAmp * (2 * abs(2 * (oscPhase + oscPhaseOffset) - 1) - 1); // Calculates triangle wave values
+					localBuff[i * channels + j] = oscAmp * (2 * abs(2 * (oscPhase + oscPhaseOffset) - 1) - 1); //Calculates triangle wave values
 					if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
 						oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
 					}
@@ -139,7 +139,7 @@ public:
 
 					}
 					if (oscPhase >= 1.0) {
-						oscPhase = 0; // This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						oscPhase = 0; //This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
 					}
 				}
 			}
@@ -156,7 +156,7 @@ public:
 		}
 	}
 
-	std::atomic<int> osc2Type = 1;//This should be changeable via dropdown menu, range 0 to 4
+	std::atomic<int> osc2Type = 2;//This should be changeable via dropdown menu, range 0 to 4
 	std::atomic<double> osc2Amp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1.
 	std::atomic<double> osc2PhaseOffset = 0.3; //This should be changeable, range -1 to 1
 	std::atomic<double> osc2PitchShift = .1; //Changeable, from -1 to 1 via knob/slider
@@ -242,10 +242,10 @@ public:
 				}
 			}
 			break;
-		case 3: // Triangle wave
+		case 3: //Triangle wave
 			for (int i = 0; i < buffSize; i++) {
 				for (int j = 0; j < channels; j++) {
-					localBuff[i * channels + j] = osc2Amp * (2 * abs(2 * (osc2Phase + osc2PhaseOffset) - 1) - 1); // Calculates triangle wave values
+					localBuff[i * channels + j] = osc2Amp * (2 * abs(2 * (osc2Phase + osc2PhaseOffset) - 1) - 1); //Calculates triangle wave values
 					if (LFOs[0].carrier == 2 && LFOs[1].carrier == 2) {
 						osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
 					}
@@ -260,7 +260,7 @@ public:
 
 					}
 					if (osc2Phase >= 1.0) {
-						osc2Phase = 0; // This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						osc2Phase = 0; //This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
 					}
 				}
 			}
@@ -279,10 +279,10 @@ public:
 
 
 	//ENVELOPE PARAMETERS
-	std::atomic<double> attack = .01;//This should be changeable (range from 0.01 to 20)
-	std::atomic<double> decay = 1;//This should be changeable (range from 0.01 to 20)
-	std::atomic<double> sustain = 0.5;//This should be changeable (range from 0 to 1)
-	std::atomic<double> release = 1;//This should be changeable (range from 0.01 to 20)
+	std::atomic<double> attack = .1;//This should be changeable (range from 0.01 to 20)
+	std::atomic<double> decay = .1;//This should be changeable (range from 0.01 to 20)
+	std::atomic<double> sustain = 0;//This should be changeable (range from 0 to 1)
+	std::atomic<double> release = .1;//This should be changeable (range from 0.01 to 20)
 
 	int oscAmpGoal = 0;//not changeable
 	int adsrState = 0;//Not changeable
@@ -299,7 +299,7 @@ public:
 		for (int i = 0; i < buffSize; i++) {
 			for (int j = 0; j < channels; j++) {
 				if (oscAmpGoal == 1) {
-					if (adsrState == 0) { // attack stage
+					if (adsrState == 0) { //attack stage
 						if (oscAmpMultiplier < 1) {
 							oscAmpMultiplier += 1 / atk;
 						}
@@ -307,7 +307,7 @@ public:
 							adsrState = 1;
 						}
 					}
-					if (adsrState == 1) { // decay stage
+					if (adsrState == 1) { //decay stage
 						if (oscAmpMultiplier > sus) {
 							oscAmpMultiplier -= (1 - sus) / dec;
 						}
@@ -316,13 +316,13 @@ public:
 							adsrState = 2;
 						}
 					}
-					//if (adsrState == 2) { // sustain stage
+					//if (adsrState == 2) { //sustain stage
 					//	oscAmpMultiplier = sus;
 					//}
 				}
 				else {
 					if (adsrState != 3) {
-						adsrState = 3; // release stage
+						adsrState = 3; //release stage
 					}
 					if (oscAmpMultiplier > 0) {
 						oscAmpMultiplier -= 1 / rel;
@@ -337,8 +337,8 @@ public:
 	}
 
 	//FILTER PARAMETERS
-	std::atomic<double> cutoffSet = 220; //This should be changeable (range from 1 to 20,000, default 220. Scaled exponentially)
-	std::atomic<double> q = 1; //This should be changeable (range from 0 to 10)
+	std::atomic<double> cutoffSet = 220; //this should be changeable (range from 30 to 20,000, default 220. Scaled exponentially)
+	std::atomic<double> q = 1; //This should be changeable (range from 0.01 to 10)
 	std::atomic<double> filterType = 1; //This should be changeable (range from -1 to 1)
 	std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
 	std::atomic<bool> keyTrack = true;
@@ -349,16 +349,15 @@ public:
 	void biquadCoefs(int sampleRate) { //Finds the coefficients 
 		//NOTE: biquad filters have a unique trait. They can be any type of filter depending on how you set your coefficients.
 		//This means they can be used as lowpass, bandpass, or highpass filters. You can even blend them together to create hybrid filters, which I do below.
-		if (cutoff < 30) {
-			cutoff = 30;
-		}
+
 		double w = (2 * 3.14159) * (cutoff / sampleRate);
 		double a = sin(w) / (2 * q);
 
 		if (filterType <= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
-			biqCoefs[0] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (a)) / 2) / (1 + a);
+			double filType = filterType * -1;
+			biqCoefs[0] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (a)) / 2) / (1 + a);
 			biqCoefs[1] = (1 - cos(w)) / (1 + a);
-			biqCoefs[2] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (0 - a)) / 2) / (1 + a);
+			biqCoefs[2] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (0 - a)) / 2) / (1 + a);
 			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}
@@ -384,7 +383,7 @@ public:
 				localBuff[i * channelCount + j] = filterInReg[j][0] * biqCoefs[0] + filterInReg[j][1] * biqCoefs[1] + filterInReg[j][2] * biqCoefs[2] - filterOutReg[j][0] * biqCoefs[3] - filterOutReg[j][1] * biqCoefs[4]; //Biquad filter equation
 
 				filterOutReg[j][1] = filterOutReg[j][0];
-				filterOutReg[j][0] = localBuff[i * channelCount + j]; //Setting the output registers
+				filterOutReg[j][0] = localBuff[i * channelCount + j]; //setting the output registers
 			}
 		}
 

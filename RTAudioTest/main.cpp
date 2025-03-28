@@ -13,7 +13,7 @@
 #include <random>
 #include "Modulators.h"
 #include "fxRack.h"
-#include <wx/dcbuffer.h> // Add this include for wxAutoBufferedPaintDC
+#include <wx/dcbuffer.h> //Add this include for wxAutoBufferedPaintDC
 #include "Goodverb.h"
 
 
@@ -22,12 +22,12 @@
 //****************************************************************************************************************************************************************
 //IMPORTANT PART FOR GUI IMPLEMENTATION
 //Below this comment, I have declared an atomic global variable for each changeable synth parameter. I want you to map them to a knobs, sliders, buttons, etc.
-// 
-// Note: Atomic variables are special variables designed for multithreading. They're designed to prevent race conditions, usually caused by multiple threads/cores
-// accessing the same variable at once. Any variables that can be accessed by both the GUI and the audio code should be declared as atomics.
-// 
-// Note #2: It may be necessary to implement something called cache padding so each variable is stored on a separate cache. This is recommended for optimization,
-// but I left it out for the sake of simplicity and readability. I may change my mind on this later.
+//
+//Note: Atomic variables are special variables designed for multithreading. They're designed to prevent race conditions, usually caused by multiple threads/cores
+//accessing the same variable at once. Any variables that can be accessed by both the GUI and the audio code should be declared as atomics.
+//
+//Note #2: It may be necessary to implement something called cache padding so each variable is stored on a separate cache. This is recommended for optimization,
+//but I left it out for the sake of simplicity and readability. I may change my mind on this later.
 //****************************************************************************************************************************************************************
 
 //GENERAL SYNTH PARAMETERS
@@ -40,17 +40,17 @@ int voiceCount = 16;//This should be changeable via dropdown menu (NOT YET IMPLE
 int channelCount = 2;//Not changeable.
 
 
-voice* voices = new voice[voiceCount];  // Dynamically allocate an array of voice objects.
+voice* voices = new voice[voiceCount];  //Dynamically allocate an array of voice objects.
 LFO* LFOs = new LFO[2];
 KeyInputManager* keyInputManager = new KeyInputManager(); //Creates keyinput manager object.
 Delay* dly = new Delay();
-Reverb* rvrb = new Reverb();
+//Reverb* rvrb = new Reverb();
 Distortion* distortion = new Distortion();
 Flanger* flanger = new Flanger();
 Chorus* chorus = new Chorus();
+Goodverb* goodverb = new Goodverb();
 
-
-// This loop is called by the audio device once per buffer. It generates audio data in batches and writes it to the buffer.
+//This loop is called by the audio device once per buffer. It generates audio data in batches and writes it to the buffer.
 int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
     double streamTime, RtAudioStreamStatus status, void* userData)
 {
@@ -86,12 +86,12 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
         }
 
     }
-    flanger->flanger(buffer);
-    chorus->chorus(buffer);
-    dly->delay(buffer);
-    rvrb->reverb(buffer);
-    distortion->distort(buffer);
-
+    //flanger->flanger(buffer);
+    //chorus->chorus(buffer);
+    //dly->delay(buffer);
+    //rvrb->reverb(buffer);
+    //distortion->distort(buffer);
+    goodverb->reverb(buffer);
 
     return 0;
 
@@ -117,9 +117,6 @@ public:
 private:
     void audioStart() { //Initializes the audio device.
 
-        //voice* voices = new voice[voiceCount];  // Dynamically allocate an array of voice objects.
-
-
         RtAudio dac;
         std::vector<unsigned int> deviceIds = dac.getDeviceIds();
         if (deviceIds.size() < 1) {
@@ -131,16 +128,16 @@ private:
         parameters.deviceId = dac.getDefaultOutputDevice(); //Set the device ID to the default output device
         parameters.nChannels = channelCount; //Set the number of channels to 2 (left and right channel for stereo)
         parameters.firstChannel = 0;
-        unsigned int sampleRate = sampRate; // Standard CD quality sample rate
-        unsigned int bufferFrames = bufferSize; // The number of sample frames. Make this higher for less CPU usage, or lower for less latency. This should be changable by the user in the final version. Also, it should be a power of two.
+        unsigned int sampleRate = sampRate; //Standard CD quality sample rate
+        unsigned int bufferFrames = bufferSize; //The number of sample frames. Make this higher for less CPU usage, or lower for less latency. This should be changable by the user in the final version. Also, it should be a power of two.
         double data[2] = { 0, 0 }; //IDK what this does but it was in the example code for the library i downloaded so I'm keeping it for now. I'll remove it if it turns out to be unnecessary.
 
         if (dac.openStream(&parameters, NULL, RTAUDIO_FLOAT64, sampleRate,
             &bufferFrames, &audioLoop, (void*)&data)) {
-            return; // Checks for a problem with device settings
+            return; //Checks for a problem with device settings
         }
 
-        // Once the stream is opened, this starts the stream
+        //Once the stream is opened, this starts the stream
         if (dac.startStream()) {
             return;
         }
@@ -150,7 +147,7 @@ private:
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
-        // Stops the audio stream
+        //Stops the audio stream
         if (dac.isStreamRunning())
             dac.stopStream();
 
@@ -168,7 +165,7 @@ public:
         : wxPanel(parent, id, wxDefaultPosition, wxSize(60, 60), wxBORDER_SIMPLE),
         minValue(minValue), maxValue(maxValue), value((minValue + maxValue) / 2), angle(0) {
 
-        SetBackgroundStyle(wxBG_STYLE_PAINT); // Avoid flickering
+        SetBackgroundStyle(wxBG_STYLE_PAINT); //Avoid flickering
         Bind(wxEVT_PAINT, &KnobControl::OnPaint, this);
         Bind(wxEVT_LEFT_DOWN, &KnobControl::OnMouseDown, this);
         Bind(wxEVT_MOTION, &KnobControl::OnMouseMove, this);
@@ -180,7 +177,7 @@ public:
         if (newValue < minValue) newValue = minValue;
         if (newValue > maxValue) newValue = maxValue;
         value = newValue;
-        angle = (value - minValue) * 270.0 / (maxValue - minValue) - 135; // Map value to angle (-135° to 135°)
+        angle = (value - minValue) * 270.0 / (maxValue - minValue) - 135; //Map value to angle (-135° to 135°)
         Refresh();
     }
 
@@ -193,9 +190,9 @@ private:
         wxAutoBufferedPaintDC dc(this);
         dc.Clear();
         dc.SetBrush(*wxLIGHT_GREY_BRUSH);
-        dc.DrawCircle(30, 30, 20); // Draw the knob background
+        dc.DrawCircle(30, 30, 20); //Draw the knob background
 
-        // Draw indicator line based on angle
+        //Draw indicator line based on angle
         double radians = angle * M_PI / 180.0;
         int x = 30 + 15 * cos(radians);
         int y = 30 - 15 * sin(radians);
@@ -212,10 +209,10 @@ private:
         if (isDragging) {
             wxPoint pos = event.GetPosition();
             double newAngle = atan2(30 - pos.y, pos.x - 30) * 180 / M_PI;
-            newAngle = wxClip(newAngle, -135, 135); // Limit rotation
+            newAngle = wxClip(newAngle, -135, 135); //Limit rotation
             angle = newAngle;
 
-            // Map angle to value
+            //Map angle to value
             value = minValue + (angle + 135) * (maxValue - minValue) / 270;
             Refresh();
         }
@@ -230,9 +227,9 @@ private:
 };
 
 //****************************************************************************************************************************************************************
-// BELOW IS THE GUI CODE
-// IT CONTAINS THE ENTRY POINT OF THE PROGRAM
-// THE AUDIO AND GUI MUST BE COMPUTED ON SEPARATE THREADS. OTHERWISE THE AUDIO PROCESSING LOOP WILL NOT RUN.
+//BELOW IS THE GUI CODE
+//IT CONTAINS THE ENTRY POINT OF THE PROGRAM
+//THE AUDIO AND GUI MUST BE COMPUTED ON SEPARATE THREADS. OTHERWISE THE AUDIO PROCESSING LOOP WILL NOT RUN.
 //****************************************************************************************************************************************************************
 class App : public wxApp {
 public:
@@ -243,7 +240,7 @@ public:
         wxPanel* panel = new wxPanel(window); //Creates a panel
 
         KnobControl* volumeKnob = new KnobControl(panel, wxID_ANY, 0, 100);
-        volumeKnob->SetValue(50); // Default value
+        volumeKnob->SetValue(50); //Default value
 
 
         window->Show();//Shows window
