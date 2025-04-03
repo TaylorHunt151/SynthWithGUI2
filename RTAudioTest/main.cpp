@@ -162,7 +162,7 @@ private:
 
 class KnobControl : public wxPanel {
 public:
-    KnobControl(wxWindow* parent, wxWindowID id = wxID_ANY, int minValue = 0, int maxValue = 350)
+    KnobControl(wxWindow* parent, wxWindowID id = wxID_ANY, int minValue = 0, int maxValue = 100)
         : wxPanel(parent, id, wxDefaultPosition, wxSize(60, 60), wxBORDER_SIMPLE),
         minValue(minValue), maxValue(maxValue), value((minValue + maxValue) / 2), angle(0) {
 
