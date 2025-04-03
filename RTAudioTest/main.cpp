@@ -44,7 +44,6 @@ voice* voices = new voice[voiceCount];  //Dynamically allocate an array of voice
 LFO* LFOs = new LFO[2];
 KeyInputManager* keyInputManager = new KeyInputManager(); //Creates keyinput manager object.
 Delay* dly = new Delay();
-//Reverb* rvrb = new Reverb();
 Distortion* distortion = new Distortion();
 Flanger* flanger = new Flanger();
 Chorus* chorus = new Chorus();
@@ -89,7 +88,6 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
     flanger->flanger(buffer);
     chorus->chorus(buffer);
     dly->delay(buffer);
-    //rvrb->reverb(buffer);
     goodverb->reverb(buffer);
     distortion->distort(buffer);
 

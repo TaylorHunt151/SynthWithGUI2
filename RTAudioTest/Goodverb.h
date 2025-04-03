@@ -520,12 +520,12 @@ public:
 				if (j == 0) { //Left channel mix
 					double leftOut = outA[index * 3] + outA[index * 3 + 1] - outB[index * 2] + outC[index * 2] - outD[index * 3] - outE[index * 2] - outF[index * 2];
 
-					buffer[index] = (leftOut * wet * 1000 + buffer[index] * dry);//Mixing the dry and wet signal. NOTE: I'm multiplying the signal by 10 to make it louder, counteracting the attenuation I performed earlier in the signal path.
+					buffer[index] = (leftOut * wet * 100 + buffer[index] * dry);//Mixing the dry and wet signal. NOTE: I'm multiplying the signal by 10 to make it louder, counteracting the attenuation I performed earlier in the signal path.
 				}
 				else { //Right channel mix
 					double rightOut = outD[index * 3 + 1] + outD[index * 3 + 2] - outE[index * 2 + 1] + outF[index * 2 + 1] - outA[index * 3 + 2] - outB[index * 2 + 1] - outC[index * 2 + 1];
 
-					buffer[index] = (rightOut * wet * 1000 + buffer[index] * dry);
+					buffer[index] = (rightOut * wet * 100 + buffer[index] * dry);
 				}
 			}
 		}
