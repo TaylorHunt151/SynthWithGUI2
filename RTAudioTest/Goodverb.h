@@ -11,7 +11,7 @@ class Goodverb { //a reverb that (hopefully) doesn't sound like trash. Work in p
 	//NOTE: The reverb will be based on Dattorro's Plate Reverb, a very popular reverb algorithm designed in 1997.
 public:
 	std::atomic<bool> on = true; //turns delay on or off. Controlled via checkbox in GUI.
-	std::atomic<double> decayTime = 10; //Controls how long the reverb is. Range from 0 to 0.999. Controlled via knob. Scaled exponentially
+	std::atomic<double> decayTime = 0.9; //Controls how long the reverb is. Range from 0 to 0.999. Controlled via knob.
 	std::atomic<double> wetMix = .5; //controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI.
 	std::atomic<double> dampFreq = 2000; //Controls the lowpass filters in the feedback loop. Range from 30 to 20000, controlled via knob.
 	std::atomic<int> preDelay = 300;//Controls how much the signal is delayed before going into the reverb. Range from 0 to 50,000. Controlled via knob.
@@ -43,7 +43,7 @@ public:
     std::vector<double> prevDampOut1;
     std::vector<double> prevDampOut2;
 
-	int dly1 = 210; //apf1 (all pass filter 1)
+	int dly1 = 210; //apf1 (all pass filter 1) delay time in samples
 	std::vector<double> dlyBuffer1;
 	int writePointer1 = 0; //Note: the write "pointer" is not actually a pointer. It does not point to a memory address. It is an integer that keeps track of where to write to a circular buffer.
 	//Circular buffers are integral parts of delays and reverbs. Essentially, it's a buffer (usually a vector or array) that is constantly being written to and read from, with the read pointer constantly lagging behind the write pointer by a set amount.
@@ -468,7 +468,7 @@ public:
 			tempBuffer[i] += tempBuffer2[i];
 		}
 		dly9 = modulator(modFreq, modAmp, modPhase, modBuffer, dly9);
-		dly10 = modulator(modFreq, modAmp, modPhase, modBuffer, dly10);
+		dly10 = modulator(modFreq, modAmp, modPhase, modBuffer, dly10); //Creating modulation signals
 		
 		tempBuffer = modulatedAllpassReverberator(0.7, dly9, dlyBuffer9, tempBuffer, writePointer9);//modulated all-pass filter
 
@@ -520,12 +520,12 @@ public:
 				if (j == 0) { //Left channel mix
 					double leftOut = outA[index * 3] + outA[index * 3 + 1] - outB[index * 2] + outC[index * 2] - outD[index * 3] - outE[index * 2] - outF[index * 2];
 
-					buffer[index] = (leftOut * wet * 10 + buffer[index] * dry);//Mixing the dry and wet signal. NOTE: I'm multiplying the signal by 10 to make it louder, counteracting the attenuation I performed earlier in the signal path.
+					buffer[index] = (leftOut * wet * 1000 + buffer[index] * dry);//Mixing the dry and wet signal. NOTE: I'm multiplying the signal by 10 to make it louder, counteracting the attenuation I performed earlier in the signal path.
 				}
 				else { //Right channel mix
 					double rightOut = outD[index * 3 + 1] + outD[index * 3 + 2] - outE[index * 2 + 1] + outF[index * 2 + 1] - outA[index * 3 + 2] - outB[index * 2 + 1] - outC[index * 2 + 1];
 
-					buffer[index] = (rightOut * wet * 10 + buffer[index] * dry);
+					buffer[index] = (rightOut * wet * 1000 + buffer[index] * dry);
 				}
 			}
 		}

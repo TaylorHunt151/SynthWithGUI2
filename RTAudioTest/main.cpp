@@ -33,7 +33,7 @@
 //GENERAL SYNTH PARAMETERS
 //These parameters require reinitialization of the audio device to be changed.
 std::atomic<int> sampRate = 44100;//This should be changeable via dropdown menu. DON'T ADD A UI ELEMENT FOR THIS YET
-std::atomic<int> bufferSize = 32;//This should be changeable via dropdown menu. DON'T ADD A UI ELEMENT FOR THIS YET
+std::atomic<int> bufferSize = 128;//This should be changeable via dropdown menu. DON'T ADD A UI ELEMENT FOR THIS YET
 std::atomic<bool> reInit = false; //Set this True if any of the above parameters are changed. This should trigger the audioStart() method and reinitialize the device. DON'T ADD A UI ELEMENT FOR THIS YET
 
 int voiceCount = 16;//This should be changeable via dropdown menu (NOT YET IMPLEMENTED)
@@ -86,12 +86,13 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
         }
 
     }
-    //flanger->flanger(buffer);
-    //chorus->chorus(buffer);
-    //dly->delay(buffer);
+    flanger->flanger(buffer);
+    chorus->chorus(buffer);
+    dly->delay(buffer);
     //rvrb->reverb(buffer);
-    //distortion->distort(buffer);
     goodverb->reverb(buffer);
+    distortion->distort(buffer);
+
 
     return 0;
 
