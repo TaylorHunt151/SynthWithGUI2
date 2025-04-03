@@ -43,20 +43,20 @@ extern std::atomic<int> bufferSize; //Dont add a UI element for this
 class Delay {
 public:
     std::atomic<bool> on = true; //Turns delay on or off. Controlled via checkbox in GUI.
-    std::atomic<double> delayTime = .5; //Delay time in seconds. Controlled via GUI. Should range from 0.001 to 10.
-    std::atomic<double> wetMix = 0.5; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI.
-	std::atomic<double> drive = .1;//Controls the distortion's harshness. Range from 0 to 1
-	std::atomic<int> distType = 0; //Changeable via dropdown menu, range 0 to 5, controls distortion type
-	std::atomic<double> distMix = 0.25; //Changeable via knob, range 0 to 1, controls the amount of distortion.
-    std::atomic<double> feedback = 0.3; //Controls delay feedback amount. Controlled via knob/slider in GUI. Range from 0 to 1.5.
+    std::atomic<double> delayTime = .5; //Delay time in seconds. Controlled via GUI. Should range from 0.001 to 10. Exponential scale.
+    std::atomic<double> wetMix = 0.5; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale.
+	std::atomic<double> drive = .1;//Controls the distortion's harshness. Range from 0 to 1, controlled via knob, logarithmic scale.
+	std::atomic<int> distType = 0; //Changeable via dropdown menu, range 0 to 5, controls distortion type.
+	std::atomic<double> distMix = 0.25; //Changeable via knob, range 0 to 1, controls the amount of distortion. Linear scale.
+    std::atomic<double> feedback = 0.3; //Controls delay feedback amount. Controlled via knob/slider in GUI. Range from 0 to 1.5. Linear scale.
 
     std::vector<double> tap; //Vector that stores the delayed signal.
     int writeIndex = 0; //Index for writing to the delay buffer.
 
-	std::atomic<double> cutoffSet = 440; //This should be changeable via knob/slider (range from 1 to 20,000, default 220. Scaled exponentially)
-	std::atomic<double> q = 1; //This should be changeable (range from 0 to 10) via knob/slider
-	std::atomic<double> filterType = 0; //This should be changeable (range from -1 to 1) via knob/slider
-	std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
+	std::atomic<double> cutoffSet = 440; //This should be changeable via knob (range from 1 to 20,000, default 220. Scaled exponentially)
+	std::atomic<double> q = 1; //This should be changeable (range from 0.1 to 10) via knob/slider. Exponential scale.
+	std::atomic<double> filterType = 0; //This should be changeable (range from -1 to 1) via knob/slider. Linear scale.
+	//std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
 
 
 	std::vector<double> tempBuffer; //Temporary buffer to prevent the original signal from being altered
@@ -179,16 +179,16 @@ public:
 class Distortion{
 public:
 	std::atomic<bool> on = true; //Turns distortion on or off. Controlled via checkbox in GUI.
-	std::atomic<double> wetMix = .125; //Controls how loud the distorted signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI.
-	std::atomic<double> drive = .1;//Drives the signal into the distortion algorithm. Ranges from 0.01 to 1. Controlled via knob/slider in GUI
+	std::atomic<double> wetMix = .125; //Controls how loud the distorted signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale
+	std::atomic<double> drive = .1;//Drives the signal into the distortion algorithm. Ranges from 0.01 to 1. Controlled via knob/slider in GUI. Logarithmic scale.
 	std::atomic<int> type = 1; //Ranges from 0 to 3 (or more, will decide later). Controlled via dropdown menu in GUI.
 
 	std::vector<double> tap; //Vector that stores the delayed signal.
 	int writeIndex = 0; //Index for writing to the delay buffer.
 
-	std::atomic<double> cutoffSet = 440; //This should be changeable via knob/slider (range from 1 to 20,000, default 220. Scaled exponentially)
-	std::atomic<double> q = 1; //This should be changeable (range from 0 to 10) via knob/slider
-	std::atomic<double> filterType = 0; //This should be changeable (range from -1 to 1) via knob/slider
+	std::atomic<double> cutoffSet = 440; //This should be changeable via knob (range from 1 to 20,000, default 220. Scaled exponentially)
+	std::atomic<double> q = 1; //This should be changeable (range from 0.1 to 10) via knob. Exponential scale.
+	std::atomic<double> filterType = 0; //This should be changeable (range from -1 to 1) via knob. Linear scale.
 
 
 	std::vector<double> tempBuffer; //Temporary buffer to prevent the original signal from being altered
@@ -299,19 +299,19 @@ public:
 class Flanger { //NOTE: A flanger is basically a delay with an LFO modulating the delay time. Also the delay time ranges from .5ms to 5ms
 public:
 	std::atomic<bool> on = true; //Turns flanger on or off. Controlled via checkbox in GUI.
-	std::atomic<double> delayTime = 0.003; //Delay time in seconds. Controlled via GUI. Should range from 0.0005 to .005.
-	std::atomic<double> wetMix = 0.5; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI.
-	std::atomic<double> modSpeed = 0.47; //Modulation speed in Hz. Range from 0.1 to 10. Controlled via knob/slider.
-	std::atomic<double> modDepth = 0.0029; //Modulation depth. Range from 0.0001 to 0.003
-	std::atomic<double> feedback = 0.5; //Controls delay feedback amount. Controlled via knob/slider in GUI. Range from 0 to 1.
+	std::atomic<double> delayTime = 0.003; //Delay time in seconds. Controlled via knob in GUI. Should range from 0.0005 to .005. Linear scale.
+	std::atomic<double> wetMix = 0.5; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale.
+	std::atomic<double> modSpeed = 0.47; //Modulation speed in Hz. Range from 0.1 to 10. Controlled via knob. Linear scale.
+	std::atomic<double> modDepth = 0.0029; //Modulation depth. Range from 0.0001 to 0.003. Controlled via knob. Linear scale.
+	std::atomic<double> feedback = 0.5; //Controls delay feedback amount. Controlled via knob in GUI. Range from 0 to 1. Logarithmic scale.
 
 	std::vector<double> tap; //Vector that stores the delayed signal.
 	int writeIndex = 0; //Index for writing to the delay buffer.
 
-	std::atomic<double> cutoffSet = 440; //This should be changeable via knob/slider (range from 1 to 20,000, default 220. Scaled exponentially)
-	std::atomic<double> q = 1; //This should be changeable (range from 0 to 10) via knob/slider
-	std::atomic<double> filterType = -0.5; //This should be changeable (range from -1 to 1) via knob/slider
-	std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
+	std::atomic<double> cutoffSet = 440; //This should be changeable via knob (range from 1 to 20,000, default 220. Scaled exponentially)
+	std::atomic<double> q = 1; //This should be changeable (range from 0.1 to 10) via knob. Scaled exponentially.
+	std::atomic<double> filterType = -0.5; //This should be changeable (range from -1 to 1) via knob. Linear scale.
+	//std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
 
 	std::vector<double> tempBuffer; //Temporary buffer to prevent the original signal from being altered
 	std::vector<double> modBuffer; //Buffer for the modulation signal
@@ -416,19 +416,19 @@ public:
 class Chorus { //NOTE: A Chorus is basically a flanger but with a slower delay time, ranging from 5 to 50 ms.
 public:
 	std::atomic<bool> on = true; //Turns flanger on or off. Controlled via checkbox in GUI.
-	std::atomic<double> delayTime = 0.03; //Delay time in seconds. Controlled via GUI. Should range from 0.005 to .05.
-	std::atomic<double> wetMix = .125; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI.
-	std::atomic<double> modSpeed = 0.52; //Modulation speed in Hz. Range from 0.1 to 10. Controlled via knob/slider.
-	std::atomic<double> modDepth = 0.02; //Modulation depth. Range from 0.001 to 0.03
-	std::atomic<double> feedback = 0; //Controls delay feedback amount. Controlled via knob/slider in GUI. Range from 0 to 1.
+	std::atomic<double> delayTime = 0.03; //Delay time in seconds. Controlled via knob in GUI. Should range from 0.005 to .05. Linear scale.
+	std::atomic<double> wetMix = .125; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale.
+	std::atomic<double> modSpeed = 0.52; //Modulation speed in Hz. Range from 0.1 to 10. Controlled via knob. Exponential scale.
+	std::atomic<double> modDepth = 0.02; //Modulation depth. Range from 0.001 to 0.03. Linear scale. Controlled via knob.
+	std::atomic<double> feedback = 0; //Controls delay feedback amount. Controlled via knob in GUI. Range from 0 to 1. Logarithmic scale.
 
 	std::vector<double> tap; //Vector that stores the delayed signal.
 	int writeIndex = 0; //Index for writing to the delay buffer.
 
-	std::atomic<double> cutoffSet = 440; //This should be changeable via knob/slider (range from 1 to 20,000, default 220. Scaled exponentially)
-	std::atomic<double> q = 1; //This should be changeable (range from 0 to 10) via knob/slider
-	std::atomic<double> filterType = -0.5; //This should be changeable (range from -1 to 1) via knob/slider
-	std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
+	std::atomic<double> cutoffSet = 440; //This should be changeable via knob (range from 1 to 20,000, default 220. Scaled exponentially)
+	std::atomic<double> q = 1; //This should be changeable (range from 0.1 to 10) via knob, exponentially scaled.
+	std::atomic<double> filterType = 0.5; //This should be changeable (range from -1 to 1) via knob. Linear scale.
+	//std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
 
 	std::vector<double> tempBuffer; //Temporary buffer to prevent the original signal from being altered
 	std::vector<double> modBuffer; //Buffer for the modulation signal

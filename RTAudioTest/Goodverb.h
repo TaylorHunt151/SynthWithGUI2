@@ -13,8 +13,6 @@
 
 //Coding this gave me a headache ;-;
 
-//NOTE: IT WORKS!!
-
 #include <atomic>
 #include <vector>
 #include <cmath>
@@ -23,10 +21,10 @@ class Goodverb { //a reverb that (hopefully) doesn't sound like trash. Work in p
 	//NOTE: The reverb will be based on Dattorro's Plate Reverb, a very popular reverb algorithm designed in 1997.
 public:
 	std::atomic<bool> on = true; //turns delay on or off. Controlled via checkbox in GUI.
-	std::atomic<double> decayTime = 0.9; //Controls how long the reverb is. Range from 0 to 0.999. Controlled via knob.
-	std::atomic<double> wetMix = .5; //controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI.
-	std::atomic<double> dampFreq = 2000; //Controls the lowpass filters in the feedback loop. Range from 30 to 20000, controlled via knob.
-	std::atomic<int> preDelay = 300;//Controls how much the signal is delayed before going into the reverb. Range from 0 to 50,000. Controlled via knob.
+	std::atomic<double> decayTime = 0.9; //Controls how long the reverb is. Range from 0 to 0.999. Controlled via knob. Logarithmically scaled
+	std::atomic<double> wetMix = .5; //controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI. Linearly scaled
+	std::atomic<double> dampFreq = 2000; //Controls the lowpass filters in the feedback loop. Range from 30 to 20000, controlled via knob. Exponentially scaled.
+	std::atomic<int> preDelay = 300;//Controls how much the signal is delayed before going into the reverb. Range from 0 to 50,000. Controlled via knob. Exponentially scaled
 
 	std::vector<double> preDelayBuffer;
 	int preDelayWritePointer = 0;
@@ -36,10 +34,10 @@ public:
 
 	//std::atomic<double> hpCutoff = 100; //this should be changeable via knob/slider (range from 1 to 20,000, default 220. Scaled exponentially)
 	//std::atomic<double> hpQ = 1; //this should be changeable (range from 0 to 10) via knob/slider
-	std::atomic<double> lpCutoff = 2000; //this should be changeable via knob/slider (range from 1 to 20,000, default 5000. Scaled exponentially)
+	std::atomic<double> lpCutoff = 2000; //this should be changeable via knob/slider (range from 10 to 20,000, default 5000. Scaled exponentially)
 
-	std::atomic<double> modFreq = .5;//range from 0.01 to 10
-	std::atomic<int> modAmp = 12; //range from 0 to 24
+	std::atomic<double> modFreq = .5;//range from 0.01 to 10, controlled by knob. Scaled exponentially.
+	std::atomic<int> modAmp = 12; //range from 0 to 24, controlled by knob. Scaled logarithmically.
 	double modPhase = 0;
 	std::vector<int> modBuffer;
 

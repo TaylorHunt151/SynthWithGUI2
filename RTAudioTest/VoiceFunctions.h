@@ -53,9 +53,9 @@ public:
 
 	//OSCILLATOR PARAMETERS
 	std::atomic<int> oscType = 3;//This should be changeable via dropdown menu, range 0 to 4
-	std::atomic<double> oscAmp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1.
-	std::atomic<double> oscPhaseOffset = 0.0; //This should be changeable, range -1 to 1
-	std::atomic<double> oscPitchShift = -0.05; //Changeable, from -1 to 1 via knob/slider
+	std::atomic<double> oscAmp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1. Scaled logarithmically.
+	std::atomic<double> oscPhaseOffset = 0.0; //This should be changeable via knob, range -1 to 1. Linear scale.
+	std::atomic<double> oscPitchShift = -0.05; //Changeable, from -1 to 1 via knob. Linear scale.
 
 	double oscFreq = 220;//Don't change this. This is set by KeyInputManager.h
 	double oscPhase = 0.0; //DON'T CHANGE THIS
@@ -177,9 +177,9 @@ public:
 	}
 
 	std::atomic<int> osc2Type = 2;//This should be changeable via dropdown menu, range 0 to 4
-	std::atomic<double> osc2Amp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1.
-	std::atomic<double> osc2PhaseOffset = 0.3; //This should be changeable, range -1 to 1
-	std::atomic<double> osc2PitchShift = .1; //Changeable, from -1 to 1 via knob/slider
+	std::atomic<double> osc2Amp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1. Scaled logarithmically.
+	std::atomic<double> osc2PhaseOffset = 0.3; //This should be changeable via knob, range -1 to 1. Scaled linearly
+	std::atomic<double> osc2PitchShift = .1; //Changeable, from -1 to 1 via knob. Scaled linearly.
 
 	double osc2Phase = 0.0; //DON'T CHANGE THIS
 
@@ -299,10 +299,10 @@ public:
 
 
 	//ENVELOPE PARAMETERS
-	std::atomic<double> attack = .1;//This should be changeable (range from 0.01 to 20)
-	std::atomic<double> decay = .1;//This should be changeable (range from 0.01 to 20)
-	std::atomic<double> sustain = 0;//This should be changeable (range from 0 to 1)
-	std::atomic<double> release = .1;//This should be changeable (range from 0.01 to 20)
+	std::atomic<double> attack = .1;//This should be changeable via slider (range from 0.01 to 20). Exponential scale.
+	std::atomic<double> decay = .1;//This should be changeable via slider (range from 0.01 to 20). Exponential scale.
+	std::atomic<double> sustain = 0;//This should be changeable via slider (range from 0 to 1). Exponential scale.
+	std::atomic<double> release = .1;//This should be changeable via slider (range from 0.01 to 20). Exponential scale.
 
 	int oscAmpGoal = 0;//not changeable
 	int adsrState = 0;//Not changeable
@@ -357,11 +357,11 @@ public:
 	}
 
 	//FILTER PARAMETERS
-	std::atomic<double> cutoffSet = 220; //this should be changeable (range from 30 to 20,000, default 220. Scaled exponentially)
-	std::atomic<double> q = 1; //This should be changeable (range from 0.01 to 10)
-	std::atomic<double> filterType = 1; //This should be changeable (range from -1 to 1)
-	std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
-	std::atomic<bool> keyTrack = true;
+	std::atomic<double> cutoffSet = 220; //this should be changeable via knob (range from 30 to 20,000, default 220. Scaled exponentially)
+	std::atomic<double> q = 1; //This should be changeable via knob. (range from 0.01 to 10). Linear scale
+	std::atomic<double> filterType = 1; //This should be changeable via knob. (range from -1 to 1), linear scale.
+	//std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
+	std::atomic<bool> keyTrack = true; //This should be changeable via checkbox in the GUI.
 	double cutoff = cutoffSet;
 	double biqCoefs[5] = { 0,0,0,0,0 };//Not changeable
 

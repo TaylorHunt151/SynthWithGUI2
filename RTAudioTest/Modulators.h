@@ -28,11 +28,11 @@ class LFO {
 public: 
 
 	//LFO PARAMETERS
-	std::atomic<double> freq = .43; //Changeable, range from 0.1 to 20
-	std::atomic<double> amp = .05; //Changeable, range from -1 to 1
+	std::atomic<double> freq = .43; //Changeable via knob, range from 0.1 to 20, exponentially scaled.
+	std::atomic<double> amp = .05; //Changeable via knob, range from -1 to 1. Logarithmicallhy scaled
 	std::atomic<int> type = 0; //Changeable via dropdown menu, range 0 to 4
-	std::atomic<int> carrier = 0; //Changeable via dropdown menu. Decides which parameter the LFO will modulate. 0 is for nothing, 1 is for oscillator freq.
-	std::atomic<double> phaseOffset = 0; //Changeable via dropdown menu. Range from -1 to 1
+	std::atomic<int> carrier = 0; //Changeable via dropdown menu. Decides which parameter the LFO will modulate. 0 is for nothing, 1 is for oscillator1 freq, 2 is for oscillator2 freq.
+	std::atomic<double> phaseOffset = 0; //Changeable via knob. Range from -1 to 1. Linear scale.
 	double phase = 0;
 	std::vector<double> localBuff;
 
