@@ -183,7 +183,7 @@ public:
     }
 
 private:
-    int minValue, maxValue, value, xStart, yStart;
+    int minValue, maxValue, value, xPrevious, yPrevious;
     double angle = 0;
     bool isDragging = false;
 
@@ -204,8 +204,8 @@ private:
 
     void OnMouseDown(wxMouseEvent& event) {
         wxPoint pos = event.GetPosition();
-        xStart = pos.x;
-        yStart = pos.y;
+        xPrevious = pos.x;
+        yPrevious = pos.y;
         isDragging = true;
         CaptureMouse();
     }
@@ -217,10 +217,10 @@ private:
             //double newAngle = atan2(30 - pos.y, pos.x - 30) * 180 / M_PI;
             //newAngle = wxClip(newAngle, -135, 135); //Limit rotation
             //angle = newAngle;
-            angle += ((pos.y - yStart) - (pos.x - xStart))/10; //New equation for the knob angle. When the mouse moves up or to the right, the knob turns clockwise. When it moves down or to the left, the knob turns counter-clockwise.
+            angle += ((pos.y - yPrevious) - (pos.x - xPrevious)); //New equation for the knob angle. When the mouse moves up or to the right, the knob turns clockwise. When it moves down or to the left, the knob turns counter-clockwise.
+            xPrevious = pos.x;
+            yPrevious = pos.y;
             //Map angle to value
-            if (angle >= maxValue) { angle = maxValue; }
-            if (angle <= minValue) { angle = minValue; }
             value = minValue + (angle + 135) * (maxValue - minValue) / 270;
             Refresh();
         }
