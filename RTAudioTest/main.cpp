@@ -162,7 +162,7 @@ private:
 
 class KnobControl : public wxPanel {
 public:
-    KnobControl(wxWindow* parent, wxWindowID id = wxID_ANY, int minValue = 0, int maxValue = 100)
+    KnobControl(wxWindow* parent, wxWindowID id = wxID_ANY, int minValue = 0, int maxValue = 350)
         : wxPanel(parent, id, wxDefaultPosition, wxSize(60, 60), wxBORDER_SIMPLE),
         minValue(minValue), maxValue(maxValue), value((minValue + maxValue) / 2), angle(0) {
 
@@ -183,9 +183,10 @@ public:
     }
 
 private:
-    int minValue, maxValue, value;
-    double angle;
+    int minValue, maxValue, value, xStart, yStart;
+    double angle = 0;
     bool isDragging = false;
+
 
     void OnPaint(wxPaintEvent&) {
         wxAutoBufferedPaintDC dc(this);
@@ -202,6 +203,9 @@ private:
     }
 
     void OnMouseDown(wxMouseEvent& event) {
+        wxPoint pos = event.GetPosition();
+        xStart = pos.x;
+        yStart = pos.y;
         isDragging = true;
         CaptureMouse();
     }
@@ -209,11 +213,14 @@ private:
     void OnMouseMove(wxMouseEvent& event) {
         if (isDragging) {
             wxPoint pos = event.GetPosition();
-            double newAngle = atan2(30 - pos.y, pos.x - 30) * 180 / M_PI;
-            newAngle = wxClip(newAngle, -135, 135); //Limit rotation
-            angle = newAngle;
 
+            //double newAngle = atan2(30 - pos.y, pos.x - 30) * 180 / M_PI;
+            //newAngle = wxClip(newAngle, -135, 135); //Limit rotation
+            //angle = newAngle;
+            angle += ((pos.y - yStart) - (pos.x - xStart))/10; //New equation for the knob angle. When the mouse moves up or to the right, the knob turns clockwise. When it moves down or to the left, the knob turns counter-clockwise.
             //Map angle to value
+            if (angle >= maxValue) { angle = maxValue; }
+            if (angle <= minValue) { angle = minValue; }
             value = minValue + (angle + 135) * (maxValue - minValue) / 270;
             Refresh();
         }
