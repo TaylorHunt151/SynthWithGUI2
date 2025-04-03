@@ -1,5 +1,36 @@
 #pragma once
 
+/*****************************************************************************
+* NOTE: The FX Rack should be its own section of the GUI. It should be divided
+* into sub-sections, with one sub-section for each class in this file. The
+* only effect on the effect rack that isn't included in this file is 
+* Goodverb, which is the reverb effect. This is because the reverb effect is
+* very complicated and required a lot of code to work. Every single effect
+* should have its own sub-section, including Goodverb. They should be appear
+* from left to right in this order: Flanger, Chorus, Delay, Goodverb,
+* Distortion. This is because this is the order in which the effects are
+* applied to the signal.
+* 
+* Above each class, you will find a list of variables, including atomics.
+* Each atomic variable should have its own UI element. There should be a 
+* comment next to each atomic variable explaining what type of UI element I want
+* you to add, what range of values it should have, etc. 
+* 
+* You may alter the attributes like so: "obj.attribute = value;", where obj
+* is the name of the effect you wish to access, "attribute" is the name of
+* the attribute you wish to alter, and "value" is the name of the value you wish
+* to assign to said attribute.
+* 
+* Here is the name of the objects, as declared in main.cpp: Delay is dly,
+* Distortion is distortion, Flanger is flanger, Chorus is chorus, and
+* Goodverb is goodverb. These are the "obj" names you will use to access the
+* attributes you wish to alter via the UI, as stated above.
+* 
+* If anything is unclear, please don't hesitate to reach out to me!
+* 
+* -Tay
+******************************************************************************/
+
 #include <atomic>
 #include <vector>
 #include <cmath>

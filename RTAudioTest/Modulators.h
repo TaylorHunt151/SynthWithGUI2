@@ -1,5 +1,20 @@
 #pragma once
 
+/*******************************************************************
+* NOTES FOR GUI: There are two LFO objects created in main.cpp. They
+* each will require their own section in the GUI. You may access
+* their attributes like so: "LFOs[i].attribute", where i is the index
+* of the LFO (ranging from 0 to 1) and "attribute" is the name of
+* the attribute you wanna access.
+* 
+* At the beginning of the LFO class, you will find several atomic
+* attributes. These should each have their own GUI element. Next to
+* the attributes, you will find a comment outlining what type of GUI
+* element they should have, what the range of values should be, etc.
+* If anything is unclear, don't hesitate to reach out to me!
+* 
+* -Tay
+********************************************************************/
 #include <cmath>
 
 

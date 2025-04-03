@@ -1,5 +1,13 @@
 #pragma once
 
+/****************************************************************
+* NOTE: This class does NOT get any GUI elements. It is pure
+* back-end stuff. Don't worry about this file yet. We may do
+* something with it later, but only if we have time.
+* 
+* -Tay
+*****************************************************************/
+
 #include <wx/wx.h>
 #include <vector>
 #include <algorithm>

@@ -1,4 +1,16 @@
 #pragma once
+/*************************************
+* NOTE: See fxRack note. This is an
+* effect like any other, and it belongs
+* on the FX rack. The only reason it
+* has its own file is because it's
+* really complicated, and the fxRack
+* file was getting too large, so I
+* moved the reverb to its own file.
+* 
+* -Tay
+**************************************/
+
 //Coding this gave me a headache ;-;
 
 //NOTE: IT WORKS!!

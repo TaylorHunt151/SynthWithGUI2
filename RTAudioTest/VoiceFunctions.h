@@ -1,3 +1,23 @@
+/************************************************************************************************************************
+* NOTE FOR GUI:
+* In this header file, there is only one class with many functions. This is different from the rest of the files. The 
+* functions Oscillator, Oscillator2, Envelope, and biquadFilter should each have their own sections with labels. The only
+* function that will not have its own section is the biquadCoefs function. Above each function, you will find a list of
+* variables, including atomics. Each atomic variable should have its own UI element. There should be a comment next to
+* each atomic variable explaining what type of UI element I want you to add, what range of values it should have, etc.
+* 
+* You can alter these attributes by accessing them like so: 
+* "for (int i = 0; i < voiceCount; i++){
+*	voices[i].attribute = value;
+* }"
+* Where i is the index of the voice object to be altered, attribute is the name of the attribute you wish to alter, and
+* value is the value you wish to assign to said attribute. 
+* 
+* If anything is unclear, please don't hesitate to reach out to me!
+* 
+* -Tay
+*************************************************************************************************************************/
+
 #pragma once
 #include <random>
 #include "Modulators.h"

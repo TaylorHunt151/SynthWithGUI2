@@ -21,8 +21,6 @@
 
 //****************************************************************************************************************************************************************
 //IMPORTANT PART FOR GUI IMPLEMENTATION
-//Below this comment, I have declared an atomic global variable for each changeable synth parameter. I want you to map them to a knobs, sliders, buttons, etc.
-//
 //Note: Atomic variables are special variables designed for multithreading. They're designed to prevent race conditions, usually caused by multiple threads/cores
 //accessing the same variable at once. Any variables that can be accessed by both the GUI and the audio code should be declared as atomics.
 //
@@ -32,9 +30,9 @@
 
 //GENERAL SYNTH PARAMETERS
 //These parameters require reinitialization of the audio device to be changed.
-std::atomic<int> sampRate = 44100;//This should be changeable via dropdown menu. DON'T ADD A UI ELEMENT FOR THIS YET
-std::atomic<int> bufferSize = 128;//This should be changeable via dropdown menu. DON'T ADD A UI ELEMENT FOR THIS YET
-std::atomic<bool> reInit = false; //Set this True if any of the above parameters are changed. This should trigger the audioStart() method and reinitialize the device. DON'T ADD A UI ELEMENT FOR THIS YET
+std::atomic<int> sampRate = 44100;//DON'T ADD A UI ELEMENT FOR THIS YET
+std::atomic<int> bufferSize = 128;//DON'T ADD A UI ELEMENT FOR THIS YET
+std::atomic<bool> reInit = false; //This should trigger the audioStart() method and reinitialize the device. DON'T ADD A UI ELEMENT FOR THIS YET
 
 int voiceCount = 16;//This should be changeable via dropdown menu (NOT YET IMPLEMENTED)
 int channelCount = 2;//Not changeable.
@@ -155,7 +153,7 @@ private:
     }
 
     std::thread audioThread; //Create a new thread to run the audio independent of the GUI
-    std::atomic<bool> running; //This value is used to stop the audio thread when the program closes. Since the stop() function is called by the App class destructor, it is declared as an atomic to avoic race conditions. DON'T ADD A UI ELEMENT FOR THIS
+    std::atomic<bool> running; //DON'T ADD A UI ELEMENT FOR THIS. This value is used to stop the audio thread when the program closes. Since the stop() function is called by the App class destructor, it is declared as an atomic to avoic race conditions. DON'T ADD A UI ELEMENT FOR THIS
 };
 
 class KnobControl : public wxPanel {
