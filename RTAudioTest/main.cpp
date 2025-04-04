@@ -31,7 +31,7 @@
 //GENERAL SYNTH PARAMETERS
 //These parameters require reinitialization of the audio device to be changed.
 std::atomic<int> sampRate = 44100;//DON'T ADD A UI ELEMENT FOR THIS YET
-std::atomic<int> bufferSize = 128;//DON'T ADD A UI ELEMENT FOR THIS YET
+std::atomic<int> bufferSize = 32;//DON'T ADD A UI ELEMENT FOR THIS YET
 std::atomic<bool> reInit = false; //This should trigger the audioStart() method and reinitialize the device. DON'T ADD A UI ELEMENT FOR THIS YET
 
 int voiceCount = 16;//This should be changeable via dropdown menu (NOT YET IMPLEMENTED)

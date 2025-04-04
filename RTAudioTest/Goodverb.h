@@ -20,8 +20,8 @@
 class Goodverb { //a reverb that (hopefully) doesn't sound like trash. Work in progress
 	//NOTE: The reverb will be based on Dattorro's Plate Reverb, a very popular reverb algorithm designed in 1997.
 public:
-	std::atomic<bool> on = true; //turns delay on or off. Controlled via checkbox in GUI.
-	std::atomic<double> decayTime = 0.9; //Controls how long the reverb is. Range from 0 to 0.999. Controlled via knob. Logarithmically scaled
+	std::atomic<bool> on = false; //turns delay on or off. Controlled via checkbox in GUI.
+	std::atomic<double> decayTime = 0.5; //Controls how long the reverb is. Range from 0 to 0.999. Controlled via knob. Logarithmically scaled
 	std::atomic<double> wetMix = .5; //controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI. Linearly scaled
 	std::atomic<double> dampFreq = 2000; //Controls the lowpass filters in the feedback loop. Range from 30 to 20000, controlled via knob. Exponentially scaled.
 	std::atomic<int> preDelay = 300;//Controls how much the signal is delayed before going into the reverb. Range from 0 to 50,000. Controlled via knob. Exponentially scaled
@@ -197,6 +197,7 @@ public:
 	}
 
 	std::vector<double> tappedAllpassReverberator(double g, int dly, std::vector<double>& dlyBuffer, std::vector<double>& inBuffer, int& writePointer, int outOffset[2]) {
+		
 		std::vector<double> allpassOut(inBuffer.size() * 2, 0);
 		const int bufferSamples = dlyBuffer.size() / channelCount;
 
@@ -445,97 +446,99 @@ public:
 		}
 	}
 	void reverb(double* buffer) {
-		//cache atomic values
-		const double decay = decayTime.load();
-		const double wet = wetMix.load();
-		const double dry = 1 - wet;
-		const double dampFreqVal = dampFreq.load();
+		if (on) {
+			//cache atomic values
+			const double decay = decayTime.load();
+			const double wet = wetMix.load();
+			const double dry = 1 - wet;
+			const double dampFreqVal = dampFreq.load();
 
-		//Reset dly9 and dly10 to prevent the modulation from accumulating over time
-		dly9 = dly9Base;
-		dly10 = dly10Base;
+			//Reset dly9 and dly10 to prevent the modulation from accumulating over time
+			dly9 = dly9Base;
+			dly10 = dly10Base;
 
-		std::copy(buffer, buffer + channelCount * bufferSize, tempBuffer.begin());//copy input to temporary buffer
+			std::copy(buffer, buffer + channelCount * bufferSize, tempBuffer.begin());//copy input to temporary buffer
 
-		onePoleFilter(tempBuffer, lpCutoff, prevLPOut);
+			onePoleFilter(tempBuffer, lpCutoff, prevLPOut);
 
-		preDly(preDelay, preDelayBuffer, tempBuffer, preDelayWritePointer);
+			preDly(preDelay, preDelayBuffer, tempBuffer, preDelayWritePointer);
 
-		//input diffusors
-		allpassReverberator(0.75, dly1, dlyBuffer1, tempBuffer, writePointer1);
-		allpassReverberator(0.75, dly2, dlyBuffer2, tempBuffer, writePointer2);
-		allpassReverberator(0.625, dly3, dlyBuffer3, tempBuffer, writePointer3);
-		allpassReverberator(0.625, dly4, dlyBuffer4, tempBuffer, writePointer4);
+			//input diffusors
+			allpassReverberator(0.75, dly1, dlyBuffer1, tempBuffer, writePointer1);
+			allpassReverberator(0.75, dly2, dlyBuffer2, tempBuffer, writePointer2);
+			allpassReverberator(0.625, dly3, dlyBuffer3, tempBuffer, writePointer3);
+			allpassReverberator(0.625, dly4, dlyBuffer4, tempBuffer, writePointer4);
 
-		//Copy pre-diffused signal for tank B feedback mixing
-		std::vector<double> inputTankA = tempBuffer;
-		std::vector<double> inputTankB(tempBuffer.size(), 0);
+			//Copy pre-diffused signal for tank B feedback mixing
+			std::vector<double> inputTankA = tempBuffer;
+			std::vector<double> inputTankB(tempBuffer.size(), 0);
 
-		/***********************************************
-		********TANK A (left channel processing)********
-		************************************************/
-		for (int i = 0; i < tempBuffer.size(); i++) {
-			tempBuffer[i] += tempBuffer2[i];
-		}
-		dly9 = modulator(modFreq, modAmp, modPhase, modBuffer, dly9);
-		dly10 = modulator(modFreq, modAmp, modPhase, modBuffer, dly10); //Creating modulation signals
-		
-		tempBuffer = modulatedAllpassReverberator(0.7, dly9, dlyBuffer9, tempBuffer, writePointer9);//modulated all-pass filter
+			/***********************************************
+			********TANK A (left channel processing)********
+			************************************************/
+			for (int i = 0; i < tempBuffer.size(); i++) {
+				tempBuffer[i] += tempBuffer2[i];
+			}
+			dly9 = modulator(modFreq, modAmp, modPhase, modBuffer, dly9);
+			dly10 = modulator(modFreq, modAmp, modPhase, modBuffer, dly10); //Creating modulation signals
 
-		outA = delayLine(dly5, dlyBuffer5, tempBuffer, writePointer5, offA);//Delay line with taps
+			tempBuffer = modulatedAllpassReverberator(0.7, dly9, dlyBuffer9, tempBuffer, writePointer9);//modulated all-pass filter
 
-		onePoleFilter(tempBuffer, dampFreqVal, prevDampOut1);
+			outA = delayLine(dly5, dlyBuffer5, tempBuffer, writePointer5, offA);//Delay line with taps
 
-		outB = tappedAllpassReverberator(0.5, dly11, dlyBuffer11, tempBuffer, writePointer11, offB);//all-pass filter with taps 
+			onePoleFilter(tempBuffer, dampFreqVal, prevDampOut1);
 
-
-		outC = twoTapDelayLine(dly6, dlyBuffer6, tempBuffer, writePointer6, offC);//delay line with taps
+			outB = tappedAllpassReverberator(0.5, dly11, dlyBuffer11, tempBuffer, writePointer11, offB);//all-pass filter with taps 
 
 
-		//add decay feedback to Tank B input
-		for (int i = 0; i < tempBuffer.size(); i++) {
-			inputTankB[i] = tempBuffer[i] * decay;
-		}
-
-		/***********************************************
-		*******TANK B (right channel processing)********
-		************************************************/
-
-		inputTankB = modulatedAllpassReverberator(0.7, dly10, dlyBuffer10, inputTankB, writePointer10);//modulated all-pass filter for Tank B
+			outC = twoTapDelayLine(dly6, dlyBuffer6, tempBuffer, writePointer6, offC);//delay line with taps
 
 
-		outD = delayLine(dly7, dlyBuffer7, inputTankB, writePointer7, offD);//delay line with taps
+			//add decay feedback to Tank B input
+			for (int i = 0; i < tempBuffer.size(); i++) {
+				inputTankB[i] = tempBuffer[i] * decay;
+			}
 
-		onePoleFilter(inputTankB, dampFreqVal, prevDampOut2);
+			/***********************************************
+			*******TANK B (right channel processing)********
+			************************************************/
+
+			inputTankB = modulatedAllpassReverberator(0.7, dly10, dlyBuffer10, inputTankB, writePointer10);//modulated all-pass filter for Tank B
 
 
-		outE = tappedAllpassReverberator(0.5, dly12, dlyBuffer12, inputTankB, writePointer12, offE);//All-pass filter with taps
+			outD = delayLine(dly7, dlyBuffer7, inputTankB, writePointer7, offD);//delay line with taps
+
+			onePoleFilter(inputTankB, dampFreqVal, prevDampOut2);
 
 
-		
-		outF = twoTapDelayLine(dly8, dlyBuffer8, inputTankB, writePointer8, offF);//delay line with taps
-
-		
-		for (int i = 0; i < inputTankA.size(); i++) {//Add feedback from Tank B to Tank A for next pass
-			tempBuffer2[i] = inputTankB[i] * decay;
-		}
-
-		//Final mix - combine all taps with appropriate weights
-		for (int i = 0; i < bufferSize; i++) {
-			for (int j = 0; j < channelCount; j++) {
-				int index = i * channelCount + j;
+			outE = tappedAllpassReverberator(0.5, dly12, dlyBuffer12, inputTankB, writePointer12, offE);//All-pass filter with taps
 
 
 
-				if (j == 0) { //Left channel mix
-					double leftOut = outA[index * 3] + outA[index * 3 + 1] - outB[index * 2] + outC[index * 2] - outD[index * 3] - outE[index * 2] - outF[index * 2];
+			outF = twoTapDelayLine(dly8, dlyBuffer8, inputTankB, writePointer8, offF);//delay line with taps
 
-					buffer[index] = (leftOut * wet * 100 + buffer[index] * dry);//Mixing the dry and wet signal. NOTE: I'm multiplying the signal by 10 to make it louder, counteracting the attenuation I performed earlier in the signal path.
-				}
-				else { //Right channel mix
-					double rightOut = outD[index * 3 + 1] + outD[index * 3 + 2] - outE[index * 2 + 1] + outF[index * 2 + 1] - outA[index * 3 + 2] - outB[index * 2 + 1] - outC[index * 2 + 1];
 
-					buffer[index] = (rightOut * wet * 100 + buffer[index] * dry);
+			for (int i = 0; i < inputTankA.size(); i++) {//Add feedback from Tank B to Tank A for next pass
+				tempBuffer2[i] = inputTankB[i] * decay;
+			}
+
+			//Final mix - combine all taps with appropriate weights
+			for (int i = 0; i < bufferSize; i++) {
+				for (int j = 0; j < channelCount; j++) {
+					int index = i * channelCount + j;
+
+
+
+					if (j == 0) { //Left channel mix
+						double leftOut = outA[index * 3] + outA[index * 3 + 1] - outB[index * 2] + outC[index * 2] - outD[index * 3] - outE[index * 2] - outF[index * 2];
+
+						buffer[index] = (leftOut * wet * 100 + buffer[index] * dry);//Mixing the dry and wet signal. NOTE: I'm multiplying the signal by 10 to make it louder, counteracting the attenuation I performed earlier in the signal path.
+					}
+					else { //Right channel mix
+						double rightOut = outD[index * 3 + 1] + outD[index * 3 + 2] - outE[index * 2 + 1] + outF[index * 2 + 1] - outA[index * 3 + 2] - outB[index * 2 + 1] - outC[index * 2 + 1];
+
+						buffer[index] = (rightOut * wet * 100 + buffer[index] * dry);
+					}
 				}
 			}
 		}

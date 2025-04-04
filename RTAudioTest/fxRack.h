@@ -42,7 +42,7 @@ extern std::atomic<int> bufferSize; //Dont add a UI element for this
 
 class Delay {
 public:
-    std::atomic<bool> on = true; //Turns delay on or off. Controlled via checkbox in GUI.
+    std::atomic<bool> on = false; //Turns delay on or off. Controlled via checkbox in GUI.
     std::atomic<double> delayTime = .5; //Delay time in seconds. Controlled via GUI. Should range from 0.001 to 10. Exponential scale.
     std::atomic<double> wetMix = 0.5; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale.
 	std::atomic<double> drive = .1;//Controls the distortion's harshness. Range from 0 to 1, controlled via knob, logarithmic scale.
@@ -140,35 +140,37 @@ public:
 
 	}
 	void delay(double* buffer) {
-		int delaySamples = static_cast<int>(delayTime * 44100); //Converts delay time from seconds to samples.
+		if (on) {
+			int delaySamples = static_cast<int>(delayTime * 44100); //Converts delay time from seconds to samples.
 
-		tempBuffer.resize(bufferSize.load() * channelCount); //Resizes tempBuffer to the correct size
+			tempBuffer.resize(bufferSize.load() * channelCount); //Resizes tempBuffer to the correct size
 
-		//Copy input buffer to tempBuffer
-		for (int i = 0; i < bufferSize; i++) {
-			for (int j = 0; j < channelCount; j++) {
-				tempBuffer[i * channelCount + j] = buffer[i * channelCount + j];
+			//Copy input buffer to tempBuffer
+			for (int i = 0; i < bufferSize; i++) {
+				for (int j = 0; j < channelCount; j++) {
+					tempBuffer[i * channelCount + j] = buffer[i * channelCount + j];
+				}
 			}
-		}
 
-		biquadCoefs();
-		biquadFilter();
-
+			biquadCoefs();
+			biquadFilter();
 
 
-		for (int i = 0; i < bufferSize; i++) {
-			for (int j = 0; j < channelCount; j++) {
-				int readIndex = (writeIndex + tap.size() - delaySamples * channelCount) % tap.size(); //Calculate read index for circular buffer.
-				double delayedSample = tap[readIndex + j]; //Get the delayed sample.
 
-				distort(delayedSample);
+			for (int i = 0; i < bufferSize; i++) {
+				for (int j = 0; j < channelCount; j++) {
+					int readIndex = (writeIndex + tap.size() - delaySamples * channelCount) % tap.size(); //Calculate read index for circular buffer.
+					double delayedSample = tap[readIndex + j]; //Get the delayed sample.
 
-				buffer[i * channelCount + j] = buffer[i * channelCount + j] * (1.0 - wetMix) + delayedSample * wetMix;				//Mix the delayed sample with the current sample.
+					distort(delayedSample);
 
-				tap[writeIndex + j] = tempBuffer[i * channelCount + j] + delayedSample * feedback;				//Write the current sample to the delay buffer with feedback.
+					buffer[i * channelCount + j] = buffer[i * channelCount + j] * (1.0 - wetMix) + delayedSample * wetMix;				//Mix the delayed sample with the current sample.
+
+					tap[writeIndex + j] = tempBuffer[i * channelCount + j] + delayedSample * feedback;				//Write the current sample to the delay buffer with feedback.
+				}
+				writeIndex = (writeIndex + channelCount) % tap.size();			//Increment write index and wrap around if necessary.
+
 			}
-			writeIndex = (writeIndex + channelCount) % tap.size();			//Increment write index and wrap around if necessary.
-
 		}
 	}
 
@@ -178,7 +180,7 @@ public:
 
 class Distortion{
 public:
-	std::atomic<bool> on = true; //Turns distortion on or off. Controlled via checkbox in GUI.
+	std::atomic<bool> on = false; //Turns distortion on or off. Controlled via checkbox in GUI.
 	std::atomic<double> wetMix = .125; //Controls how loud the distorted signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale
 	std::atomic<double> drive = .1;//Drives the signal into the distortion algorithm. Ranges from 0.01 to 1. Controlled via knob/slider in GUI. Logarithmic scale.
 	std::atomic<int> type = 1; //Ranges from 0 to 3 (or more, will decide later). Controlled via dropdown menu in GUI.
@@ -274,22 +276,23 @@ public:
 	}
 
 	void distort(double* buffer) {
-		for (int i = 0; i < (bufferSize * channelCount); i++) {
-			tempBuffer[i] = buffer[i];
-		}
-		biquadCoefs(); 
-		biquadFilter();//Filtering the signal before distorting is is a common technique to shape the timbre of the distortion
-
-		for (int i = 0; i < (bufferSize * channelCount); i++) {
-			//tempBuffer[i] *= drive;
-			distAlgorithms(i);
-			if (drive > 1) {
-				tempBuffer[i] /= drive * drive;
+		if (on) {
+			for (int i = 0; i < (bufferSize * channelCount); i++) {
+				tempBuffer[i] = buffer[i];
 			}
-			buffer[i] = tempBuffer[i] * wetMix + buffer[i] * (1 - wetMix);
+			biquadCoefs();
+			biquadFilter();//Filtering the signal before distorting is is a common technique to shape the timbre of the distortion
+
+			for (int i = 0; i < (bufferSize * channelCount); i++) {
+				//tempBuffer[i] *= drive;
+				distAlgorithms(i);
+				if (drive > 1) {
+					tempBuffer[i] /= drive * drive;
+				}
+				buffer[i] = tempBuffer[i] * wetMix + buffer[i] * (1 - wetMix);
+			}
+
 		}
-
-
 
 
 	}
@@ -298,7 +301,7 @@ public:
 
 class Flanger { //NOTE: A flanger is basically a delay with an LFO modulating the delay time. Also the delay time ranges from .5ms to 5ms
 public:
-	std::atomic<bool> on = true; //Turns flanger on or off. Controlled via checkbox in GUI.
+	std::atomic<bool> on = false; //Turns flanger on or off. Controlled via checkbox in GUI.
 	std::atomic<double> delayTime = 0.003; //Delay time in seconds. Controlled via knob in GUI. Should range from 0.0005 to .005. Linear scale.
 	std::atomic<double> wetMix = 0.5; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale.
 	std::atomic<double> modSpeed = 0.47; //Modulation speed in Hz. Range from 0.1 to 10. Controlled via knob. Linear scale.
@@ -381,33 +384,35 @@ public:
 	}
 
 	void flanger(double* buffer) {
-		int baseDelaySamples = static_cast<int>(delayTime * 44100); //Converts delay time from seconds to samples
+		if (on) {
+			int baseDelaySamples = static_cast<int>(delayTime * 44100); //Converts delay time from seconds to samples
 
-		tempBuffer.resize(bufferSize.load() * channelCount); //Resizes tempBuffer to the correct size
+			tempBuffer.resize(bufferSize.load() * channelCount); //Resizes tempBuffer to the correct size
 
-		//Copy input buffer to tempBuffer
-		for (int i = 0; i < bufferSize; i++) {
-			for (int j = 0; j < channelCount; j++) {
-				tempBuffer[i * channelCount + j] = buffer[i * channelCount + j];
+			//Copy input buffer to tempBuffer
+			for (int i = 0; i < bufferSize; i++) {
+				for (int j = 0; j < channelCount; j++) {
+					tempBuffer[i * channelCount + j] = buffer[i * channelCount + j];
+				}
 			}
-		}
 
-		biquadCoefs();
-		biquadFilter();
-		modulator();
+			biquadCoefs();
+			biquadFilter();
+			modulator();
 
-		for (int i = 0; i < bufferSize; i++) {
-			for (int j = 0; j < channelCount; j++) {
-				int modulatedDelaySamples = baseDelaySamples + static_cast<int>(modBuffer[i * channelCount + j] * 44100); //Modulate delay time
+			for (int i = 0; i < bufferSize; i++) {
+				for (int j = 0; j < channelCount; j++) {
+					int modulatedDelaySamples = baseDelaySamples + static_cast<int>(modBuffer[i * channelCount + j] * 44100); //Modulate delay time
 
-				int readIndex = (writeIndex + tap.size() - modulatedDelaySamples * channelCount) % tap.size(); //Calculate read index for circular buffer
-				double delayedSample = tap[readIndex + j]; //Get the delayed sample
+					int readIndex = (writeIndex + tap.size() - modulatedDelaySamples * channelCount) % tap.size(); //Calculate read index for circular buffer
+					double delayedSample = tap[readIndex + j]; //Get the delayed sample
 
-				buffer[i * channelCount + j] = buffer[i * channelCount + j] * (1.0 - wetMix) + delayedSample * wetMix; //Mix the delayed sample with the current sample
+					buffer[i * channelCount + j] = buffer[i * channelCount + j] * (1.0 - wetMix) + delayedSample * wetMix; //Mix the delayed sample with the current sample
 
-				tap[writeIndex + j] = tempBuffer[i * channelCount + j] + delayedSample * feedback; //Write the current sample to the delay buffer with feedback
+					tap[writeIndex + j] = tempBuffer[i * channelCount + j] + delayedSample * feedback; //Write the current sample to the delay buffer with feedback
+				}
+				writeIndex = (writeIndex + channelCount) % tap.size(); //Increment write index and wrap around if necessary
 			}
-			writeIndex = (writeIndex + channelCount) % tap.size(); //Increment write index and wrap around if necessary
 		}
 	}
 };
@@ -415,7 +420,7 @@ public:
 
 class Chorus { //NOTE: A Chorus is basically a flanger but with a slower delay time, ranging from 5 to 50 ms.
 public:
-	std::atomic<bool> on = true; //Turns flanger on or off. Controlled via checkbox in GUI.
+	std::atomic<bool> on = false; //Turns flanger on or off. Controlled via checkbox in GUI.
 	std::atomic<double> delayTime = 0.03; //Delay time in seconds. Controlled via knob in GUI. Should range from 0.005 to .05. Linear scale.
 	std::atomic<double> wetMix = .125; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale.
 	std::atomic<double> modSpeed = 0.52; //Modulation speed in Hz. Range from 0.1 to 10. Controlled via knob. Exponential scale.
@@ -427,7 +432,7 @@ public:
 
 	std::atomic<double> cutoffSet = 440; //This should be changeable via knob (range from 1 to 20,000, default 220. Scaled exponentially)
 	std::atomic<double> q = 1; //This should be changeable (range from 0.1 to 10) via knob, exponentially scaled.
-	std::atomic<double> filterType = 0.5; //This should be changeable (range from -1 to 1) via knob. Linear scale.
+	std::atomic<double> filterType = -0.5; //This should be changeable (range from -1 to 1) via knob. Linear scale.
 	//std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
 
 	std::vector<double> tempBuffer; //Temporary buffer to prevent the original signal from being altered
@@ -523,53 +528,55 @@ public:
 
 
 	void chorus(double* buffer) {
-		int baseDelaySamples[3];
-		//Note: A really fast delay creates an artifact called comb filtering. This artifact is the basis of a chourus effect. The frequency of the comb filter is inversely proportional to the delay time.
-		baseDelaySamples[0] = static_cast<int>(delayTime * 44100); //Converts delay time from seconds to samples for the first comb filter
-		baseDelaySamples[1] = static_cast<int>(floor(delayTime * 44100 * (2/3))); //Creates another comb filter at a frequency 1.5 times higher than the original, lining it up with the famous perfect fifth interval. 
-		baseDelaySamples[2] = static_cast<int>(delayTime * 44100*2); //Creates another comb filter at a frequency 1 octave below baseDelaySamples[1], which also happens form a perfect fourth interval with baseDelaySamples[0].
-		//These three frequency ratios should produce musically pleasing harmonies.
+		if (on) {
+			int baseDelaySamples[3];
+			//Note: A really fast delay creates an artifact called comb filtering. This artifact is the basis of a chourus effect. The frequency of the comb filter is inversely proportional to the delay time.
+			baseDelaySamples[0] = static_cast<int>(delayTime * 44100); //Converts delay time from seconds to samples for the first comb filter
+			baseDelaySamples[1] = static_cast<int>(floor(delayTime * 44100 * (2 / 3))); //Creates another comb filter at a frequency 1.5 times higher than the original, lining it up with the famous perfect fifth interval. 
+			baseDelaySamples[2] = static_cast<int>(delayTime * 44100 * 2); //Creates another comb filter at a frequency 1 octave below baseDelaySamples[1], which also happens form a perfect fourth interval with baseDelaySamples[0].
+			//These three frequency ratios should produce musically pleasing harmonies.
 
 
-		int modulatedDelaySamples[3];
-		int readIndex[3];
-		double delayedSample[3];
+			int modulatedDelaySamples[3];
+			int readIndex[3];
+			double delayedSample[3];
 
 
 
-		tempBuffer.resize(bufferSize.load() * channelCount); //Resizes tempBuffer to the correct size
+			tempBuffer.resize(bufferSize.load() * channelCount); //Resizes tempBuffer to the correct size
 
-		//Copy input buffer to tempBuffer
-		for (int i = 0; i < bufferSize; i++) {
-			for (int j = 0; j < channelCount; j++) {
-				tempBuffer[i * channelCount + j] = buffer[i * channelCount + j];
+			//Copy input buffer to tempBuffer
+			for (int i = 0; i < bufferSize; i++) {
+				for (int j = 0; j < channelCount; j++) {
+					tempBuffer[i * channelCount + j] = buffer[i * channelCount + j];
+				}
 			}
-		}
 
-		biquadCoefs();
-		biquadFilter();
-		modulator();
-		mod2();
+			biquadCoefs();
+			biquadFilter();
+			modulator();
+			mod2();
 
-		for (int i = 0; i < bufferSize; i++) {
-			for (int j = 0; j < channelCount; j++) {
-				modulatedDelaySamples[0] = baseDelaySamples[0] + static_cast<int>(modBuffer[i * channelCount + j] * 44100); //Modulate delay time
-				modulatedDelaySamples[1] = baseDelaySamples[1] + static_cast<int>(mod2Buffer[i * channelCount + j] * mod2Buffer[i * channelCount + j] * 44100);
-				modulatedDelaySamples[2] = baseDelaySamples[2] + static_cast<int>(modBuffer[i * channelCount + j] * 44100);
+			for (int i = 0; i < bufferSize; i++) {
+				for (int j = 0; j < channelCount; j++) {
+					modulatedDelaySamples[0] = baseDelaySamples[0] + static_cast<int>(modBuffer[i * channelCount + j] * 44100); //Modulate delay time
+					modulatedDelaySamples[1] = baseDelaySamples[1] + static_cast<int>(mod2Buffer[i * channelCount + j] * mod2Buffer[i * channelCount + j] * 44100);
+					modulatedDelaySamples[2] = baseDelaySamples[2] + static_cast<int>(modBuffer[i * channelCount + j] * 44100);
 
-				readIndex[0]  = (writeIndex + tap.size() - modulatedDelaySamples[0] * channelCount) % tap.size(); //Calculates the read indexes for circular buffer
-				readIndex[1] = (writeIndex + tap.size() - modulatedDelaySamples[1] * channelCount) % tap.size();
-				readIndex[1] = (writeIndex + tap.size() - modulatedDelaySamples[1] * channelCount) % tap.size();
+					readIndex[0] = (writeIndex + tap.size() - modulatedDelaySamples[0] * channelCount) % tap.size(); //Calculates the read indexes for circular buffer
+					readIndex[1] = (writeIndex + tap.size() - modulatedDelaySamples[1] * channelCount) % tap.size();
+					readIndex[1] = (writeIndex + tap.size() - modulatedDelaySamples[1] * channelCount) % tap.size();
 
-				delayedSample[0] = tap[readIndex[0] + j]; //Get the delayed samples
-				delayedSample[1] = tap[readIndex[1] + j];
-				//delayedSample[2] = tap[readIndex[2] + j];
+					delayedSample[0] = tap[readIndex[0] + j]; //Get the delayed samples
+					delayedSample[1] = tap[readIndex[1] + j];
+					//delayedSample[2] = tap[readIndex[2] + j];
 
-				buffer[i * channelCount + j] = buffer[i * channelCount + j] * (1.0 - wetMix) + ( delayedSample[0]) * wetMix; //Mix the delayed sample with the current sample
+					buffer[i * channelCount + j] = buffer[i * channelCount + j] * (1.0 - wetMix) + (delayedSample[0]) * wetMix; //Mix the delayed sample with the current sample
 
-				tap[writeIndex + j] = tempBuffer[i * channelCount + j] + (delayedSample[0]) * feedback; //Write the current sample to the delay buffer with feedback
+					tap[writeIndex + j] = tempBuffer[i * channelCount + j] + (delayedSample[0]) * feedback; //Write the current sample to the delay buffer with feedback
+				}
+				writeIndex = (writeIndex + channelCount) % tap.size(); //Increment write index and wrap around if necessary
 			}
-			writeIndex = (writeIndex + channelCount) % tap.size(); //Increment write index and wrap around if necessary
 		}
 	}
 };

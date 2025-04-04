@@ -52,6 +52,7 @@ public:
 	}
 
 	//OSCILLATOR PARAMETERS
+	std::atomic<bool> oscOn = true; //Controlled via checkbox in the GUI. Controls whether the oscillator is on or of.
 	std::atomic<int> oscType = 3;//This should be changeable via dropdown menu, range 0 to 4
 	std::atomic<double> oscAmp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1. Scaled logarithmically.
 	std::atomic<double> oscPhaseOffset = 0.0; //This should be changeable via knob, range -1 to 1. Linear scale.
@@ -61,121 +62,123 @@ public:
 	double oscPhase = 0.0; //DON'T CHANGE THIS
 
 	void oscillator(int buffSize, int channels) {
+		if (oscOn) {
+			switch (oscType) {
+			case 0: //Sine wave
+				for (int i = 0; i < buffSize; i++) {
+					for (int j = 0; j < channels; j++)
+					{
+						if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) { //If both LFO's are modulating this...
+							localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * (oscFreq * pow(2, oscPitchShift / 12)) * (oscPhase + oscPhaseOffset)); //Calculates sine wave values
+						}
+						else if (LFOs[0].carrier == 1) {
+							localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) * (oscPhase + oscPhaseOffset)); //Calculates sine wave values
+						}
+						else if (LFOs[1].carrier == 1) {
+							localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) * (oscPhase + oscPhaseOffset)); //Calculates sine wave values
 
-		switch (oscType) {
-		case 0: //Sine wave
-			for (int i = 0; i < buffSize; i++) {
-				for (int j = 0; j < channels; j++)
-				{
-					if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) { //If both LFO's are modulating this...
-						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * (oscFreq * pow(2, oscPitchShift / 12)) * (oscPhase + oscPhaseOffset)); //Calculates sine wave values
-					}
-					else if (LFOs[0].carrier == 1) {
-						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) * (oscPhase+oscPhaseOffset)); //Calculates sine wave values
-					}
-					else if (LFOs[1].carrier == 1) {
-						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) * (oscPhase + oscPhaseOffset)); //Calculates sine wave values
+						}
+						else {
+							localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * (oscFreq * pow(2, oscPitchShift / 12)) * (oscPhase + oscPhaseOffset)); //Calculates sine wave values
 
-					}
-					else {
-						localBuff[i * channels + j] = oscAmp * sin(2 * M_PI * (oscFreq * pow(2, oscPitchShift / 12)) * (oscPhase + oscPhaseOffset)); //Calculates sine wave values
-
-					}
-					oscPhase += 1.0 / 44100.0; //Keeps track of the phase
-					if (oscPhase >= 1.0) {
-						oscPhase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						}
+						oscPhase += 1.0 / 44100.0; //Keeps track of the phase
+						if (oscPhase >= 1.0) {
+							oscPhase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						}
 					}
 				}
-			}
-			break;
-		case 1: //Square wave
-			for (int i = 0; i < buffSize; i++) {
-				for (int j = 0; j < channels; j++)
-				{
-					localBuff[i * channels + j] = oscAmp * ((oscPhase + oscPhaseOffset) < 0.5 ? 1 : -1); //Calculates square wave values
+				break;
+			case 1: //Square wave
+				for (int i = 0; i < buffSize; i++) {
+					for (int j = 0; j < channels; j++)
+					{
+						localBuff[i * channels + j] = oscAmp * ((oscPhase + oscPhaseOffset) < 0.5 ? 1 : -1); //Calculates square wave values
 
 
 
-					if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
-						oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12))/ 44100.0; //Keeps track of the phase
-					}
-					else if (LFOs[0].carrier == 1) {
-						oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12 )) / 44100.0; //Keeps track of the phase
-					}
-					else if (LFOs[1].carrier == 1) {
-						oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12 )) / 44100.0; //Keeps track of the phase
-					}
-					else {
-						oscPhase += (oscFreq * pow(2, oscPitchShift / 12)) / 44100.0; //Keeps track of the phase
+						if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
+							oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else if (LFOs[0].carrier == 1) {
+							oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else if (LFOs[1].carrier == 1) {
+							oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else {
+							oscPhase += (oscFreq * pow(2, oscPitchShift / 12)) / 44100.0; //Keeps track of the phase
 
-					}
+						}
 
-					if (oscPhase >= 1.0) {
-						oscPhase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						if (oscPhase >= 1.0) {
+							oscPhase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						}
 					}
 				}
-			}
-			break;
-		case 2: //Sawtooth wave
-			for (int i = 0; i < buffSize; i++) {
-				for (int j = 0; j < channels; j++)
-				{
-					localBuff[i * channels + j] = oscAmp * (2 * (oscPhase + oscPhaseOffset) - 1); //Calculates sawtooth wave values
-					if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
-						oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else if (LFOs[0].carrier == 1) {
-						oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else if (LFOs[1].carrier == 1) {
-						oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else {
-						oscPhase += (oscFreq * pow(2, oscPitchShift / 12)) / 44100.0; //Keeps track of the phase
+				break;
+			case 2: //Sawtooth wave
+				for (int i = 0; i < buffSize; i++) {
+					for (int j = 0; j < channels; j++)
+					{
+						localBuff[i * channels + j] = oscAmp * (2 * (oscPhase + oscPhaseOffset) - 1); //Calculates sawtooth wave values
+						if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
+							oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else if (LFOs[0].carrier == 1) {
+							oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else if (LFOs[1].carrier == 1) {
+							oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else {
+							oscPhase += (oscFreq * pow(2, oscPitchShift / 12)) / 44100.0; //Keeps track of the phase
 
-					}
+						}
 
-					if (oscPhase >= 1.0) {
-						oscPhase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						if (oscPhase >= 1.0) {
+							oscPhase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						}
 					}
 				}
-			}
-			break;
-		case 3: //Triangle wave
-			for (int i = 0; i < buffSize; i++) {
-				for (int j = 0; j < channels; j++) {
-					localBuff[i * channels + j] = oscAmp * (2 * abs(2 * (oscPhase + oscPhaseOffset) - 1) - 1); //Calculates triangle wave values
-					if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
-						oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else if (LFOs[0].carrier == 1) {
-						oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else if (LFOs[1].carrier == 1) {
-						oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else {
-						oscPhase += (oscFreq * pow(2, oscPitchShift / 12)) / 44100.0; //Keeps track of the phase
+				break;
+			case 3: //Triangle wave
+				for (int i = 0; i < buffSize; i++) {
+					for (int j = 0; j < channels; j++) {
+						localBuff[i * channels + j] = oscAmp * (2 * abs(2 * (oscPhase + oscPhaseOffset) - 1) - 1); //Calculates triangle wave values
+						if (LFOs[0].carrier == 1 && LFOs[1].carrier == 1) {
+							oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else if (LFOs[0].carrier == 1) {
+							oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else if (LFOs[1].carrier == 1) {
+							oscPhase += ((oscFreq * pow(2, oscPitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else {
+							oscPhase += (oscFreq * pow(2, oscPitchShift / 12)) / 44100.0; //Keeps track of the phase
 
-					}
-					if (oscPhase >= 1.0) {
-						oscPhase = 0; //This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						}
+						if (oscPhase >= 1.0) {
+							oscPhase = 0; //This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						}
 					}
 				}
-			}
-			break;
-		case 4: //noise
+				break;
+			case 4: //noise
 
-			for (int i = 0; i < buffSize; i++) {
-				for (int j = 0; j < channels; j++) {
-					localBuff[i * channels + j] = oscAmp * (distribution(generator) * 2 - 1); //Generates random numbers between -1 and 1 to create noise.
-					//Noise is useful for making percussive sounds and ambience.
+				for (int i = 0; i < buffSize; i++) {
+					for (int j = 0; j < channels; j++) {
+						localBuff[i * channels + j] = oscAmp * (distribution(generator) * 2 - 1); //Generates random numbers between -1 and 1 to create noise.
+						//Noise is useful for making percussive sounds and ambience.
+					}
 				}
-			}
 
+			}
 		}
 	}
 
+	std::atomic<bool> osc2On = false; //Controlled via checkbox in the GUI. Turns the oscillator on or off.
 	std::atomic<int> osc2Type = 2;//This should be changeable via dropdown menu, range 0 to 4
 	std::atomic<double> osc2Amp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1. Scaled logarithmically.
 	std::atomic<double> osc2PhaseOffset = 0.3; //This should be changeable via knob, range -1 to 1. Scaled linearly
@@ -184,116 +187,117 @@ public:
 	double osc2Phase = 0.0; //DON'T CHANGE THIS
 
 	void oscillator2(int buffSize, int channels) {
+		if (osc2On) {
+			switch (osc2Type) {
+			case 0: //Sine wave
+				for (int i = 0; i < buffSize; i++) {
+					for (int j = 0; j < channels; j++)
+					{
+						if (LFOs[0].carrier == 2 && LFOs[1].carrier == 2) { //If both LFO's are modulating this...
+							localBuff[i * channels + j] += osc2Amp * sin(2 * M_PI * (oscFreq * pow(2, osc2PitchShift / 12)) * (osc2Phase + osc2PhaseOffset)); //Calculates sine wave values
+						}
+						else if (LFOs[0].carrier == 2) {
+							localBuff[i * channels + j] += osc2Amp * sin(2 * M_PI * ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) * (osc2Phase + osc2PhaseOffset)); //Calculates sine wave values
+						}
+						else if (LFOs[1].carrier == 2) {
+							localBuff[i * channels + j] += osc2Amp * sin(2 * M_PI * ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) * (osc2Phase + osc2PhaseOffset)); //Calculates sine wave values
 
-		switch (osc2Type) {
-		case 0: //Sine wave
-			for (int i = 0; i < buffSize; i++) {
-				for (int j = 0; j < channels; j++)
-				{
-					if (LFOs[0].carrier == 2 && LFOs[1].carrier == 2) { //If both LFO's are modulating this...
-						localBuff[i * channels + j] += osc2Amp * sin(2 * M_PI * (oscFreq * pow(2, osc2PitchShift / 12)) * (osc2Phase + osc2PhaseOffset)); //Calculates sine wave values
-					}
-					else if (LFOs[0].carrier == 2) {
-						localBuff[i * channels + j] += osc2Amp * sin(2 * M_PI * ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) * (osc2Phase + osc2PhaseOffset)); //Calculates sine wave values
-					}
-					else if (LFOs[1].carrier == 2) {
-						localBuff[i * channels + j] += osc2Amp * sin(2 * M_PI * ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) * (osc2Phase + osc2PhaseOffset)); //Calculates sine wave values
+						}
+						else {
+							localBuff[i * channels + j] += osc2Amp * sin(2 * M_PI * (oscFreq * pow(2, osc2PitchShift / 12)) * (osc2Phase + osc2PhaseOffset)); //Calculates sine wave values
 
-					}
-					else {
-						localBuff[i * channels + j] += osc2Amp * sin(2 * M_PI * (oscFreq * pow(2, osc2PitchShift / 12)) * (osc2Phase + osc2PhaseOffset)); //Calculates sine wave values
-
-					}
-					osc2Phase += 1.0 / 44100.0; //Keeps track of the phase
-					if (osc2Phase >= 1.0) {
-						osc2Phase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						}
+						osc2Phase += 1.0 / 44100.0; //Keeps track of the phase
+						if (osc2Phase >= 1.0) {
+							osc2Phase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						}
 					}
 				}
-			}
-			break;
-		case 1: //Square wave
-			for (int i = 0; i < buffSize; i++) {
-				for (int j = 0; j < channels; j++)
-				{
-					localBuff[i * channels + j] += osc2Amp * ((osc2Phase + osc2PhaseOffset) < 0.5 ? 1 : -1); //Calculates square wave values
+				break;
+			case 1: //Square wave
+				for (int i = 0; i < buffSize; i++) {
+					for (int j = 0; j < channels; j++)
+					{
+						localBuff[i * channels + j] += osc2Amp * ((osc2Phase + osc2PhaseOffset) < 0.5 ? 1 : -1); //Calculates square wave values
 
-					if (LFOs[0].carrier == 2 && LFOs[1].carrier == 2) {
-						osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else if (LFOs[0].carrier == 2) {
-						osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else if (LFOs[1].carrier == 2) {
-						osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else {
-						osc2Phase += (oscFreq * pow(2, osc2PitchShift / 12)) / 44100.0; //Keeps track of the phase
+						if (LFOs[0].carrier == 2 && LFOs[1].carrier == 2) {
+							osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else if (LFOs[0].carrier == 2) {
+							osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else if (LFOs[1].carrier == 2) {
+							osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else {
+							osc2Phase += (oscFreq * pow(2, osc2PitchShift / 12)) / 44100.0; //Keeps track of the phase
 
-					}
+						}
 
-					if (osc2Phase >= 1.0) {
-						osc2Phase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						if (osc2Phase >= 1.0) {
+							osc2Phase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						}
 					}
 				}
-			}
-			break;
-		case 2: //Sawtooth wave
-			for (int i = 0; i < buffSize; i++) {
-				for (int j = 0; j < channels; j++)
-				{
-					localBuff[i * channels + j] += osc2Amp * (2 * (osc2Phase + osc2PhaseOffset) - 1); //Calculates sawtooth wave values
-					if (LFOs[0].carrier == 2 && LFOs[1].carrier == 2) {
-						osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else if (LFOs[0].carrier == 2) {
-						osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else if (LFOs[1].carrier == 2) {
-						osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else {
-						osc2Phase += (oscFreq * pow(2, osc2PitchShift / 12)) / 44100.0; //Keeps track of the phase
+				break;
+			case 2: //Sawtooth wave
+				for (int i = 0; i < buffSize; i++) {
+					for (int j = 0; j < channels; j++)
+					{
+						localBuff[i * channels + j] += osc2Amp * (2 * (osc2Phase + osc2PhaseOffset) - 1); //Calculates sawtooth wave values
+						if (LFOs[0].carrier == 2 && LFOs[1].carrier == 2) {
+							osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else if (LFOs[0].carrier == 2) {
+							osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else if (LFOs[1].carrier == 2) {
+							osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else {
+							osc2Phase += (oscFreq * pow(2, osc2PitchShift / 12)) / 44100.0; //Keeps track of the phase
 
-					}
+						}
 
-					if (osc2Phase >= 1.0) {
-						osc2Phase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						if (osc2Phase >= 1.0) {
+							osc2Phase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						}
 					}
 				}
-			}
-			break;
-		case 3: //Triangle wave
-			for (int i = 0; i < buffSize; i++) {
-				for (int j = 0; j < channels; j++) {
-					localBuff[i * channels + j] = osc2Amp * (2 * abs(2 * (osc2Phase + osc2PhaseOffset) - 1) - 1); //Calculates triangle wave values
-					if (LFOs[0].carrier == 2 && LFOs[1].carrier == 2) {
-						osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else if (LFOs[0].carrier == 1) {
-						osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else if (LFOs[1].carrier == 1) {
-						osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
-					}
-					else {
-						osc2Phase += (oscFreq * pow(2, osc2PitchShift / 12)) / 44100.0; //Keeps track of the phase
+				break;
+			case 3: //Triangle wave
+				for (int i = 0; i < buffSize; i++) {
+					for (int j = 0; j < channels; j++) {
+						localBuff[i * channels + j] = osc2Amp * (2 * abs(2 * (osc2Phase + osc2PhaseOffset) - 1) - 1); //Calculates triangle wave values
+						if (LFOs[0].carrier == 2 && LFOs[1].carrier == 2) {
+							osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, (LFOs[0].localBuff[i] + LFOs[1].localBuff[i]) / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else if (LFOs[0].carrier == 1) {
+							osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[0].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else if (LFOs[1].carrier == 1) {
+							osc2Phase += ((oscFreq * pow(2, osc2PitchShift / 12)) * pow(2, LFOs[1].localBuff[i] / 12)) / 44100.0; //Keeps track of the phase
+						}
+						else {
+							osc2Phase += (oscFreq * pow(2, osc2PitchShift / 12)) / 44100.0; //Keeps track of the phase
 
-					}
-					if (osc2Phase >= 1.0) {
-						osc2Phase = 0; //This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						}
+						if (osc2Phase >= 1.0) {
+							osc2Phase = 0; //This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
+						}
 					}
 				}
-			}
-			break;
-		case 4: //noise
+				break;
+			case 4: //noise
 
-			for (int i = 0; i < buffSize; i++) {
-				for (int j = 0; j < channels; j++) {
-					localBuff[i * channels + j] = osc2Amp * (distribution(generator) * 2 - 1); //Generates random numbers between -1 and 1 to create noise.
-					//Noise is useful for making percussive sounds and ambience.
+				for (int i = 0; i < buffSize; i++) {
+					for (int j = 0; j < channels; j++) {
+						localBuff[i * channels + j] = osc2Amp * (distribution(generator) * 2 - 1); //Generates random numbers between -1 and 1 to create noise.
+						//Noise is useful for making percussive sounds and ambience.
+					}
 				}
-			}
 
+			}
 		}
 	}
 
@@ -357,6 +361,7 @@ public:
 	}
 
 	//FILTER PARAMETERS
+	//std::atomic<bool> filtOn = false; //Controlled via checkbox in the GUI. Controls whether the filter is activated.
 	std::atomic<double> cutoffSet = 220; //this should be changeable via knob (range from 30 to 20,000, default 220. Scaled exponentially)
 	std::atomic<double> q = 1; //This should be changeable via knob. (range from 0.01 to 10). Linear scale
 	std::atomic<double> filterType = 1; //This should be changeable via knob. (range from -1 to 1), linear scale.
@@ -406,7 +411,7 @@ public:
 				filterOutReg[j][0] = localBuff[i * channelCount + j]; //setting the output registers
 			}
 		}
-
+		
 	}
 
 
