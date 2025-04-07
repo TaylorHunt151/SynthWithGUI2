@@ -156,6 +156,7 @@ private:
     std::atomic<bool> running; //DON'T ADD A UI ELEMENT FOR THIS. This value is used to stop the audio thread when the program closes. Since the stop() function is called by the App class destructor, it is declared as an atomic to avoic race conditions. DON'T ADD A UI ELEMENT FOR THIS
 };
 
+
 class KnobControl : public wxPanel {
 public:
     KnobControl(wxWindow* parent, wxWindowID id = wxID_ANY, int minValue = 0, int maxValue = 100)
@@ -230,35 +231,77 @@ private:
     }
 };
 
+
 //****************************************************************************************************************************************************************
 //BELOW IS THE GUI CODE
 //IT CONTAINS THE ENTRY POINT OF THE PROGRAM
 //THE AUDIO AND GUI MUST BE COMPUTED ON SEPARATE THREADS. OTHERWISE THE AUDIO PROCESSING LOOP WILL NOT RUN.
 //****************************************************************************************************************************************************************
+
+ std::atomic<double> cutoffSet = 220.0;
+
 class App : public wxApp {
 public:
 
 
     bool OnInit() { //This is the entry point for the program.
-        wxFrame* window = new wxFrame(NULL, wxID_ANY, "GUI Test", wxDefaultPosition, wxSize(600, 400));//Creates a window
-        wxPanel* panel = new wxPanel(window); //Creates a panel
+        wxFrame* window = new wxFrame(NULL, wxID_ANY, "GUI Test", wxDefaultPosition, wxSize(600, 400));
+        wxPanel* panel = new wxPanel(window);
 
+        // Existing volume knob
         KnobControl* volumeKnob = new KnobControl(panel, wxID_ANY, 0, 100);
-        volumeKnob->SetValue(50); //Default value
+        volumeKnob->SetValue(50);
 
+        // Cutoff knob
+        KnobControl* cutoffKnob = new KnobControl(panel, wxID_ANY, 30, 20000);
+        cutoffKnob->SetValue(static_cast<int>(cutoffSet.load()));
 
-        window->Show();//Shows window
+        // Debug box (multiline, readonly)
+        wxTextCtrl* debugBox = new wxTextCtrl(panel, wxID_ANY, "",
+            wxDefaultPosition, wxSize(200, 100),
+            wxTE_MULTILINE | wxTE_READONLY | wxBORDER_SIMPLE);
+
+        // Main vertical sizer to organize everything
+        wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+        wxBoxSizer* knobSizer = new wxBoxSizer(wxHORIZONTAL);
+        knobSizer->Add(volumeKnob, 0, wxALL, 15);
+        knobSizer->Add(cutoffKnob, 0, wxALL, 15);
+
+        mainSizer->Add(knobSizer, 0, wxALIGN_CENTER);
+
+        // Align debug box to bottom-right corner
+        wxBoxSizer* bottomSizer = new wxBoxSizer(wxHORIZONTAL);
+        bottomSizer->AddStretchSpacer(1);
+        bottomSizer->Add(debugBox, 0, wxALL | wxALIGN_RIGHT | wxALIGN_BOTTOM, 10);
+
+        mainSizer->AddStretchSpacer(1);
+        mainSizer->Add(bottomSizer, 0, wxEXPAND);
+
+        panel->SetSizer(mainSizer);
+
+        window->Show();
         window->SetFocus();
 
-        window->Bind(wxEVT_KEY_DOWN, &KeyInputManager::OnKeyDown, keyInputManager); //Binds key up event
-        window->Bind(wxEVT_KEY_UP, &KeyInputManager::OnKeyUp, keyInputManager); //Binds key down event
+        window->Bind(wxEVT_KEY_DOWN, &KeyInputManager::OnKeyDown, keyInputManager);
+        window->Bind(wxEVT_KEY_UP, &KeyInputManager::OnKeyUp, keyInputManager);
 
-        audioManager.start();//Starts the audio in a separate thread
+        audioManager.start();
+
+        // Timer updating cutoffSet and debug info regularly
+        wxTimer* updateTimer = new wxTimer(window);
+        window->Bind(wxEVT_TIMER, [=](wxTimerEvent&) {
+            cutoffSet.store(static_cast<double>(cutoffKnob->GetValue()));
+
+            // Output current cutoffSet value clearly for debugging
+            debugBox->SetValue(wxString::Format("Cutoff: %.2f\nVolume: %d",
+                cutoffSet.load(), volumeKnob->GetValue()));
+            });
+        updateTimer->Start(50); // Update every 50ms
 
         return true;
     }
 
-    int OnExit() {
+    int OnExit() noexcept {
         audioManager.stop();
         return 0;
     }

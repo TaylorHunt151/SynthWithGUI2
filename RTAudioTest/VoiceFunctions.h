@@ -362,7 +362,7 @@ public:
 
 	//FILTER PARAMETERS
 	//std::atomic<bool> filtOn = false; //Controlled via checkbox in the GUI. Controls whether the filter is activated.
-	std::atomic<double> cutoffSet = 220; //this should be changeable via knob (range from 30 to 20,000, default 220. Scaled exponentially)
+	std::atomic<double> cutoffSet = 220.0; //this should be changeable via knob (range from 30 to 20,000, default 220. Scaled exponentially)
 	std::atomic<double> q = 1; //This should be changeable via knob. (range from 0.01 to 10). Linear scale
 	std::atomic<double> filterType = 1; //This should be changeable via knob. (range from -1 to 1), linear scale.
 	//std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
