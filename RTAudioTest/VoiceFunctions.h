@@ -421,7 +421,7 @@ public:
 			gain = (filterType)*gainHP + (1 + filterType) * gainBP;
 		}
 
-		if (gain != 0.0) {
+		if (gain != 0.0) { //dividing each B coefficient by the gain value to preserve unity-gain across the frequency spectrum
 			biqCoefs[0] /= gain;
 			biqCoefs[1] /= gain;
 			biqCoefs[2] /= gain;
