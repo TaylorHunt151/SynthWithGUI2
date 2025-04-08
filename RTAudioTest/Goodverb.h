@@ -21,10 +21,18 @@ class Goodverb { //a reverb that (hopefully) doesn't sound like trash. Work in p
 	//NOTE: The reverb will be based on Dattorro's Plate Reverb, a very popular reverb algorithm designed in 1997.
 public:
 	std::atomic<bool> on = true; //turns delay on or off. Controlled via checkbox in GUI.
-	std::atomic<double> decayTime = 0.5; //Controls how long the reverb is. Range from 0 to 0.999. Controlled via knob. Logarithmically scaled
-	std::atomic<double> wetMix = .25; //controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI. Linearly scaled
-	std::atomic<double> dampFreq = 2000; //Controls the lowpass filters in the feedback loop. Range from 30 to 20000, controlled via knob. Exponentially scaled.
+	std::atomic<double> decayTime = 0.5; //Controls how long the reverb is. Range from 0 to 0.499. Controlled via knob. Logarithmically scaled
+	std::atomic<double> wetMix = .5; //controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI. Linearly scaled
+	std::atomic<double> dampFreq = 5000; //Controls the lowpass filters in the feedback loop. Range from 30 to 5000, controlled via knob. Exponentially scaled.
 	std::atomic<int> preDelay = 300;//Controls how much the signal is delayed before going into the reverb. Range from 0 to 50,000. Controlled via knob. Exponentially scaled
+
+
+	std::vector<double> dampCoefs;
+	std::vector<double> dampInReg;
+	std::vector<double> dampInReg2;
+	std::vector<double> dampOutReg;
+	std::vector<double> dampOutReg2;
+
 
 	std::vector<double> preDelayBuffer;
 	int preDelayWritePointer = 0;
@@ -34,10 +42,16 @@ public:
 
 	//std::atomic<double> hpCutoff = 100; //this should be changeable via knob/slider (range from 1 to 20,000, default 220. Scaled exponentially)
 	//std::atomic<double> hpQ = 1; //this should be changeable (range from 0 to 10) via knob/slider
-	std::atomic<double> lpCutoff = 2000; //this should be changeable via knob/slider (range from 10 to 20,000, default 5000. Scaled exponentially)
+	std::atomic<double> filterType = 1;//Range from -1 to 1, controlled via knob. Linear scale. 
+	std::atomic<double> filtQ = 1; //Range from 0.001 to 10, controlled via knob, logarithmic scale.
+	std::atomic<double> filterCutoff = 1800; //this should be changeable via knob/slider (range from 80 to 18,000, default 5000. Scaled exponentially)
+
+	std::vector<double> filterCoefs;
+	std::vector<double> filtInReg;
+	std::vector<double> filtOutReg;
 
 	std::atomic<double> modFreq = .5;//range from 0.01 to 10, controlled by knob. Scaled exponentially.
-	std::atomic<int> modAmp = 12; //range from 0 to 24, controlled by knob. Scaled logarithmically.
+	std::atomic<int> modAmp = 12; //range from 0 to 24, controlled by knob. Scaled linearly.
 	double modPhase = 0;
 	std::vector<int> modBuffer;
 
@@ -45,13 +59,6 @@ public:
 	std::vector<double> tempBuffer; //temporary buffer to prevent the original signal from being altered
 	std::vector<double> tempBuffer2; //temporary buffer to prevent the original signal from being altered
 
-	double biqCoefs[5] = { 0,0,0,0,0 };//bot changeable. Input filter coefficients
-	double dampCoefs[5] = { 0,0,0,0,0, }; //also not changeable. Filter coefficients for the lowpass filter that's in the feedback loop, controlled by the "damping" variable
-
-	//these variables store the filters' input and output registers. 
-	std::vector<double> prevLPOut;
-    std::vector<double> prevDampOut1;
-    std::vector<double> prevDampOut2;
 
 	int dly1 = 210; //apf1 (all pass filter 1) delay time in samples
 	std::vector<double> dlyBuffer1;
@@ -160,9 +167,15 @@ public:
 
 		preDelayBuffer.resize(50000);
 
-		prevLPOut.resize(2, 0);
-		prevDampOut1.resize(2, 0);
-		prevDampOut2.resize(2, 0);
+		dampCoefs.resize(5, 0);
+		filterCoefs.resize(5, 0);
+
+		dampInReg.resize(3 * channelCount, 0);
+		dampInReg2.resize(3 * channelCount, 0);
+		dampOutReg.resize(2 * channelCount, 0);
+		dampOutReg2.resize(2 * channelCount, 0);
+		filtInReg.resize(3 * channelCount, 0);
+		filtOutReg.resize(2 * channelCount, 0);
 	}
 
 	void allpassReverberator(double g, int dly, std::vector<double>& dlyBuffer, std::vector<double>& inBuffer, int& writePointer) {
@@ -369,6 +382,76 @@ public:
 
 	}
 
+	void biquadCoefs(double cutoff, double q, double filtType, std::vector<double>& biqCoefs) { //Finds the coefficients for the biquad. Copied from voicefunctions.h, modified a bit for efficiency
+		//NOTE: biquad filters have a unique trait. They can be any type of filter depending on how you set your coefficients.
+		//This means they can be used as lowpass, bandpass, or highpass filters. You can even blend them together to create hybrid filters, which I do below.
+		double w = (2 * 3.14159) * (cutoff / 44100);
+		double a = sin(w) / (2 * q);
+		double cosw = cos(w);
+
+		if (filtType <= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
+			double filType = filtType * -1;
+			biqCoefs[0] = (((filType * (1 - cosw) / 2) + (1 - filType) * (a)) / 2) / (1 + a);
+			biqCoefs[1] = (1 - cosw) / (1 + a);
+			biqCoefs[2] = (((filType * (1 - cosw) / 2) + (1 - filType) * (0 - a)) / 2) / (1 + a);
+			biqCoefs[3] = (-2 * cosw) / (1 + a);
+			biqCoefs[4] = (1 - a) / (1 + a);
+		}
+		else { //If filterType < 0, I take the equation for a highpass filter and a bandpass filter and "blend" them together using a weighted average.
+			biqCoefs[0] = (((filtType * (1 + cosw) / 2) + (1 - filtType) * (a)) / 2) / (1 + a);
+			biqCoefs[1] = (filtType * (-1 + cosw)) / (1 + a);
+			biqCoefs[2] = (((filtType * (1 + cosw) / 2) + (1 - filtType) * (-a)) / 2) / (1 + a);
+			biqCoefs[3] = (-2 * cosw) / (1 + a);
+			biqCoefs[4] = (1 - a) / (1 + a);
+		}//This implementation allows the user too seamlessly blend between the three main filter types, giving extra control over the timbre of the synth.
+
+		//gain compensation
+		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. Robert Bristow-Johnson's Audio EQ Cookbook includes some formulas to help us compensate for this and have more consistent gain across the frequency spectrum.
+		double gainLP = 1;
+		double gainHP = 1;
+		double gainBP = 1;
+		double gain = 1;
+
+		gainLP = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);//calculates gain at DC for the lowpass filter (DC = 0hz)
+
+		gainHP = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);//calculates gain at Nyquist for the highpass filter (nyquist is the highest frequency in the signal)
+
+		double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);//calculates the real portion of the gain at the center frequency for bandpass
+		double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);//Calculates the imaginary portion of the bandpass gain
+		double mag = sqrt(real * real + imag * imag);//computes the magnitude by combining the real and imaginary portions together
+		gainBP = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));//Calculates the gain at the cutoff frequency for the bandpass filter
+
+		if (filterType >= 0) {//Calculates overall gain if the filter is bandpass, lowpass, or anything in-between
+			gain = filterType * gainLP + (1 - filterType) * gainBP;
+		}
+		else {//Calculates for overall gain if the filter is highpass, bandpass, or anywhere in-between.
+			gain = (filterType)*gainHP + (1 + filterType) * gainBP;
+		}
+
+		if (gain != 0.0) {
+			biqCoefs[0] /= gain;
+			biqCoefs[1] /= gain;
+			biqCoefs[2] /= gain;
+		}
+
+	}
+
+	void biquadFilter(std::vector<double>& filterInReg, std::vector<double>& filterOutReg, std::vector<double>& biqCoefs, std::vector<double>& buffer) { //This is a standard biquad filter. Copied from voicefunctions.h
+
+		for (int i = 0; i < bufferSize; i++) {
+			for (int j = 0; j < channelCount; j++) {
+				filterInReg[2 * channelCount + j] = filterInReg[channelCount + j];
+				filterInReg[channelCount + j] = filterInReg[j];
+				filterInReg[j] = buffer[i * channelCount + j];//Setting the input registers
+
+				buffer[i * channelCount + j] = filterInReg[j] * biqCoefs[0] + filterInReg[j + channelCount] * biqCoefs[1] + filterInReg[j + 2 * channelCount] * biqCoefs[2] - filterOutReg[j] * biqCoefs[3] - filterOutReg[j + channelCount] * biqCoefs[4]; //Biquad filter equation
+
+				filterOutReg[channelCount + j] = filterOutReg[j];
+				filterOutReg[j] = buffer[i * channelCount + j]; //setting the output registers
+			}
+		}
+	}
+
 	std::vector<double> twoTapDelayLine(int dly, std::vector<double>& dlyBuffer, std::vector<double>& inBuffer, int& writePointer, int outOffset[2]) {
 		//properly sized output buffer for 2 taps
 		std::vector<double> delayOut(inBuffer.size() * 2, 0);
@@ -418,33 +501,18 @@ public:
 				int index = channelCount * i + j;
 				modBuffer[index] = floor(amp * (2 * abs(2 * phase - 1) - 1)); //calculates triangle wave values
 				phase += (freq / 44100);
-				if (phase >= 1) {
-					phase = 0;
-				}
+
 				modParam[index] += modBuffer[index];
+			}
+			if (phase >= 1) {
+				phase = 0;
 			}
 		}
 		return modParam;
 		
 	}
 
-	void onePoleFilter(std::vector<double>& buffer, double cutoff, std::vector<double>& prevOut) { //I'm using a different type of filter here because the biquad filter kept distorting and this one is (supposedly) more stable
-		//calculate coefficient
-		double a = exp(-2.0 * M_PI * cutoff / 44100.0);
 
-		for (int i = 0; i < bufferSize; i++) {
-			for (int j = 0; j < channelCount; j++) {
-				int index = i * channelCount + j;
-
-				//One-pole lowpass equation
-				double y = buffer[index] * (1.0 - a) + prevOut[j] * a;
-				y *= 0.1;//gain staging (making the signal quieter to avoid clipping)
-
-				buffer[index] = y;
-				prevOut[j] = y;
-			}
-		}
-	}
 	void reverb(double* buffer) {
 		if (on) {
 			//cache atomic values
@@ -459,7 +527,8 @@ public:
 
 			std::copy(buffer, buffer + channelCount * bufferSize, tempBuffer.begin());//copy input to temporary buffer
 
-			onePoleFilter(tempBuffer, lpCutoff, prevLPOut);
+			biquadCoefs(filterCutoff, filtQ, filterType, filterCoefs);
+			biquadFilter(filtInReg, filtOutReg, filterCoefs, tempBuffer);
 
 			preDly(preDelay, preDelayBuffer, tempBuffer, preDelayWritePointer);
 
@@ -486,7 +555,8 @@ public:
 
 			outA = delayLine(dly5, dlyBuffer5, tempBuffer, writePointer5, offA);//Delay line with taps
 
-			onePoleFilter(tempBuffer, dampFreqVal, prevDampOut1);
+			biquadCoefs(dampFreq, .5, 1, dampCoefs);
+			biquadFilter(dampInReg, dampOutReg, dampCoefs, tempBuffer);
 
 			outB = tappedAllpassReverberator(0.5, dly11, dlyBuffer11, tempBuffer, writePointer11, offB);//all-pass filter with taps 
 
@@ -508,7 +578,8 @@ public:
 
 			outD = delayLine(dly7, dlyBuffer7, inputTankB, writePointer7, offD);//delay line with taps
 
-			onePoleFilter(inputTankB, dampFreqVal, prevDampOut2);
+			//onePoleFilter(inputTankB, dampFreqVal, prevDampOut2);
+			biquadFilter(dampInReg2, dampOutReg2, dampCoefs, inputTankB);
 
 
 			outE = tappedAllpassReverberator(0.5, dly12, dlyBuffer12, inputTankB, writePointer12, offE);//All-pass filter with taps
@@ -527,17 +598,15 @@ public:
 				for (int j = 0; j < channelCount; j++) {
 					int index = i * channelCount + j;
 
-
-
 					if (j == 0) { //Left channel mix
 						double leftOut = outA[index * 3] + outA[index * 3 + 1] - outB[index * 2] + outC[index * 2] - outD[index * 3] - outE[index * 2] - outF[index * 2];
 
-						buffer[index] = (leftOut * wet * 1000 + buffer[index] * dry);//Mixing the dry and wet signal. NOTE: I'm multiplying the signal by 10 to make it louder, counteracting the attenuation I performed earlier in the signal path.
+						buffer[index] = (leftOut * wet + buffer[index] * dry);//Mixing the dry and wet signal. NOTE: I'm multiplying the signal by 10 to make it louder, counteracting the attenuation I performed earlier in the signal path.
 					}
 					else { //Right channel mix
 						double rightOut = outD[index * 3 + 1] + outD[index * 3 + 2] - outE[index * 2 + 1] + outF[index * 2 + 1] - outA[index * 3 + 2] - outB[index * 2 + 1] - outC[index * 2 + 1];
 
-						buffer[index] = (rightOut * wet * 1000 + buffer[index] * dry);
+						buffer[index] = (rightOut * wet + buffer[index] * dry);
 					}
 				}
 			}
