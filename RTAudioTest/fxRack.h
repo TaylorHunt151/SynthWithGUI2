@@ -42,7 +42,7 @@ extern std::atomic<int> bufferSize; //Dont add a UI element for this
 
 class Delay {
 public:
-    std::atomic<bool> on = false; //Turns delay on or off. Controlled via checkbox in GUI.
+    std::atomic<bool> on = true; //Turns delay on or off. Controlled via checkbox in GUI.
     std::atomic<double> delayTime = .5; //Delay time in seconds. Controlled via GUI. Should range from 0.001 to 10. Exponential scale.
     std::atomic<double> wetMix = 0.5; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale.
 	std::atomic<double> drive = .1;//Controls the distortion's harshness. Range from 0 to 1, controlled via knob, logarithmic scale.
@@ -78,45 +78,69 @@ public:
 		if (x >= 0) { return 1; }
 		else { return -1; }
 	}
-	void biquadCoefs() { //copied from VoiceFunctions
-
-		double w = (2 * M_PI) * (cutoff / 44100);
+	void biquadCoefs() { //Finds the coefficients 
+		//NOTE: biquad filters have a unique trait. They can be any type of filter depending on how you set your coefficients.
+		//This means they can be used as lowpass, bandpass, or highpass filters. You can even blend them together to create hybrid filters, which I do below.
+		cutoff = cutoffSet;
+		double w = (2 * 3.14159) * (cutoff / 44100);
 		double a = sin(w) / (2 * q);
 
-		if (filterType <= 0) {
-			biqCoefs[0] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (a)) / 2) / (1 + a);
+		if (filterType <= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
+			double filType = filterType * -1;
+			biqCoefs[0] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (a)) / 2) / (1 + a);
 			biqCoefs[1] = (1 - cos(w)) / (1 + a);
-			biqCoefs[2] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (0 - a)) / 2) / (1 + a);
+			biqCoefs[2] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (0 - a)) / 2) / (1 + a);
 			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}
-		else {
+		else { //If filterType < 0, I take the equation for a highpass filter and a bandpass filter and "blend" them together using a weighted average.
 			biqCoefs[0] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (a)) / 2) / (1 + a);
 			biqCoefs[1] = (filterType * (-1 + cos(w))) / (1 + a);
 			biqCoefs[2] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (-a)) / 2) / (1 + a);
 			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
+		}//This implementation allows the user too seamlessly blend between the three main filter types, giving extra control over the timbre of the synth.
+
+		//gain compensation
+		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. Robert Bristow-Johnson's Audio EQ Cookbook includes some formulas to help us compensate for this and have more consistent gain across the frequency spectrum.
+		double gain = 1;
+		if (filterType >= 0.5) {//Formula for if the filter is lowpass
+			gain = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);
+		}
+		else if (filterType <= -0.5) {//formula for if the filter is highpass
+			gain = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);
+		}
+		else {//Formula for if the filter is bandpass
+			double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);
+			double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);
+			double mag = sqrt(real * real + imag * imag);
+			gain = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));
 		}
 
+		if (gain != 0.0) {
+			biqCoefs[0] /= gain;
+			biqCoefs[1] /= gain;
+			biqCoefs[2] /= gain;
+		}
 
 	}
 
-	void biquadFilter() { //copied from voicefunctions
+	void biquadFilter() { //This is a standard biquad filter. 
 
 		for (int i = 0; i < bufferSize; i++) {
 			for (int j = 0; j < channelCount; j++) {
 				filterInReg[j][2] = filterInReg[j][1];
 				filterInReg[j][1] = filterInReg[j][0];
-				filterInReg[j][0] = tempBuffer[i * channelCount + j];
+				filterInReg[j][0] = tempBuffer[i * channelCount + j];//Setting the input registers
 
-				tempBuffer[i * channelCount + j] = filterInReg[j][0] * biqCoefs[0] + filterInReg[j][1] * biqCoefs[1] + filterInReg[j][2] * biqCoefs[2] - filterOutReg[j][0] * biqCoefs[3] - filterOutReg[j][1] * biqCoefs[4]; //Filter math equation
+				tempBuffer[i * channelCount + j] = filterInReg[j][0] * biqCoefs[0] + filterInReg[j][1] * biqCoefs[1] + filterInReg[j][2] * biqCoefs[2] - filterOutReg[j][0] * biqCoefs[3] - filterOutReg[j][1] * biqCoefs[4]; //Biquad filter equation
 
 				filterOutReg[j][1] = filterOutReg[j][0];
-				filterOutReg[j][0] = tempBuffer[i * channelCount + j];
+				filterOutReg[j][0] = tempBuffer[i * channelCount + j]; //setting the output registers
 			}
 		}
-
 	}
+
 	double distort(double x) {
 
 		double y = 0; 
@@ -180,7 +204,7 @@ public:
 
 class Distortion{
 public:
-	std::atomic<bool> on = false; //Turns distortion on or off. Controlled via checkbox in GUI.
+	std::atomic<bool> on = true; //Turns distortion on or off. Controlled via checkbox in GUI.
 	std::atomic<double> wetMix = .125; //Controls how loud the distorted signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale
 	std::atomic<double> drive = .1;//Drives the signal into the distortion algorithm. Ranges from 0.01 to 1. Controlled via knob/slider in GUI. Logarithmic scale.
 	std::atomic<int> type = 1; //Ranges from 0 to 3 (or more, will decide later). Controlled via dropdown menu in GUI.
@@ -199,6 +223,7 @@ public:
 	std::vector<std::vector<double>> filterOutReg; //Creates a 2d vector storing the filter's output registers for each channel. Not changeable.
 	std::vector<std::vector<double>> filterInReg; //Creates a 2d vector for the filter's input registers
 
+	double cutoff = cutoffSet;
 
 	Distortion() { //Initializes distortion attributes to correct sizes
 		tempBuffer.resize(bufferSize.load() * channelCount);
@@ -208,44 +233,67 @@ public:
 
 
 
-	void biquadCoefs() { //copied from VoiceFunctions.h
-
-		double w = (2 * 3.14159) * (cutoffSet / 44100);
+	void biquadCoefs() { //Finds the coefficients 
+		//NOTE: biquad filters have a unique trait. They can be any type of filter depending on how you set your coefficients.
+		//This means they can be used as lowpass, bandpass, or highpass filters. You can even blend them together to create hybrid filters, which I do below.
+		//cutoff = cutoffSet;
+		double w = (2 * 3.14159) * (cutoff / 44100);
 		double a = sin(w) / (2 * q);
 
-		if (filterType <= 0) {
-			biqCoefs[0] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (a)) / 2) / (1 + a);
+		if (filterType <= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
+			double filType = filterType * -1;
+			biqCoefs[0] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (a)) / 2) / (1 + a);
 			biqCoefs[1] = (1 - cos(w)) / (1 + a);
-			biqCoefs[2] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (0 - a)) / 2) / (1 + a);
+			biqCoefs[2] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (0 - a)) / 2) / (1 + a);
 			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}
-		else {
+		else { //If filterType < 0, I take the equation for a highpass filter and a bandpass filter and "blend" them together using a weighted average.
 			biqCoefs[0] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (a)) / 2) / (1 + a);
 			biqCoefs[1] = (filterType * (-1 + cos(w))) / (1 + a);
 			biqCoefs[2] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (-a)) / 2) / (1 + a);
 			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
+		}//This implementation allows the user too seamlessly blend between the three main filter types, giving extra control over the timbre of the synth.
+
+		//gain compensation
+		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. Robert Bristow-Johnson's Audio EQ Cookbook includes some formulas to help us compensate for this and have more consistent gain across the frequency spectrum.
+		double gain = 1;
+		if (filterType >= 0.5) {//Formula for if the filter is lowpass
+			gain = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);
+		}
+		else if (filterType <= -0.5) {//formula for if the filter is highpass
+			gain = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);
+		}
+		else {//Formula for if the filter is bandpass
+			double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);
+			double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);
+			double mag = sqrt(real * real + imag * imag);
+			gain = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));
 		}
 
+		if (gain != 0.0) {
+			biqCoefs[0] /= gain;
+			biqCoefs[1] /= gain;
+			biqCoefs[2] /= gain;
+		}
 
 	}
 
-	void biquadFilter() {//copied from VoiceFunctions.h
+	void biquadFilter() { //This is a standard biquad filter. 
 
 		for (int i = 0; i < bufferSize; i++) {
 			for (int j = 0; j < channelCount; j++) {
 				filterInReg[j][2] = filterInReg[j][1];
 				filterInReg[j][1] = filterInReg[j][0];
-				filterInReg[j][0] = tempBuffer[i * channelCount + j];
+				filterInReg[j][0] = tempBuffer[i * channelCount + j];//Setting the input registers
 
-				tempBuffer[i * channelCount + j] = filterInReg[j][0] * biqCoefs[0] + filterInReg[j][1] * biqCoefs[1] + filterInReg[j][2] * biqCoefs[2] - filterOutReg[j][0] * biqCoefs[3] - filterOutReg[j][1] * biqCoefs[4]; //Filter math equation
+				tempBuffer[i * channelCount + j] = filterInReg[j][0] * biqCoefs[0] + filterInReg[j][1] * biqCoefs[1] + filterInReg[j][2] * biqCoefs[2] - filterOutReg[j][0] * biqCoefs[3] - filterOutReg[j][1] * biqCoefs[4]; //Biquad filter equation
 
 				filterOutReg[j][1] = filterOutReg[j][0];
-				filterOutReg[j][0] = tempBuffer[i * channelCount + j];
+				filterOutReg[j][0] = tempBuffer[i * channelCount + j]; //setting the output registers
 			}
 		}
-
 	}
 
 	double sign(double x) {
@@ -301,12 +349,12 @@ public:
 
 class Flanger { //NOTE: A flanger is basically a delay with an LFO modulating the delay time. Also the delay time ranges from .5ms to 5ms
 public:
-	std::atomic<bool> on = false; //Turns flanger on or off. Controlled via checkbox in GUI.
+	std::atomic<bool> on = true; //Turns flanger on or off. Controlled via checkbox in GUI.
 	std::atomic<double> delayTime = 0.003; //Delay time in seconds. Controlled via knob in GUI. Should range from 0.0005 to .005. Linear scale.
 	std::atomic<double> wetMix = 0.5; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale.
 	std::atomic<double> modSpeed = 0.47; //Modulation speed in Hz. Range from 0.1 to 10. Controlled via knob. Linear scale.
 	std::atomic<double> modDepth = 0.0029; //Modulation depth. Range from 0.0001 to 0.003. Controlled via knob. Linear scale.
-	std::atomic<double> feedback = 0.5; //Controls delay feedback amount. Controlled via knob in GUI. Range from 0 to 1. Logarithmic scale.
+	std::atomic<double> feedback = 0.25; //Controls delay feedback amount. Controlled via knob in GUI. Range from 0 to 1. Logarithmic scale.
 
 	std::vector<double> tap; //Vector that stores the delayed signal.
 	int writeIndex = 0; //Index for writing to the delay buffer.
@@ -324,6 +372,8 @@ public:
 	std::vector<std::vector<double>> filterOutReg; //Creates a 2d vector storing the filter's output registers for each channel. Not changeable.
 	std::vector<std::vector<double>> filterInReg;
 
+	double cutoff = cutoffSet;
+
 	Flanger() { //Initialize variables to correct sizes
 		tempBuffer.resize(bufferSize.load() * channelCount);
 		filterOutReg.resize(channelCount, std::vector<double>(2, 0));
@@ -336,41 +386,68 @@ public:
 		return (x >= 0) ? 1 : -1;
 	}
 
-	void biquadCoefs() { //Copied from VoiceFunctions
-		double w = (2 * 3.14159) * (cutoffSet / 44100);
+	void biquadCoefs() { //Finds the coefficients 
+		//NOTE: biquad filters have a unique trait. They can be any type of filter depending on how you set your coefficients.
+		//This means they can be used as lowpass, bandpass, or highpass filters. You can even blend them together to create hybrid filters, which I do below.
+		cutoff = cutoffSet;
+		double w = (2 * 3.14159) * (cutoff / 44100);
 		double a = sin(w) / (2 * q);
 
-		if (filterType <= 0) {
-			biqCoefs[0] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (a)) / 2) / (1 + a);
+		if (filterType <= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
+			double filType = filterType * -1;
+			biqCoefs[0] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (a)) / 2) / (1 + a);
 			biqCoefs[1] = (1 - cos(w)) / (1 + a);
-			biqCoefs[2] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (0 - a)) / 2) / (1 + a);
+			biqCoefs[2] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (0 - a)) / 2) / (1 + a);
 			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}
-		else {
+		else { //If filterType < 0, I take the equation for a highpass filter and a bandpass filter and "blend" them together using a weighted average.
 			biqCoefs[0] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (a)) / 2) / (1 + a);
 			biqCoefs[1] = (filterType * (-1 + cos(w))) / (1 + a);
 			biqCoefs[2] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (-a)) / 2) / (1 + a);
 			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
+		}//This implementation allows the user too seamlessly blend between the three main filter types, giving extra control over the timbre of the synth.
+
+		//gain compensation
+		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. Robert Bristow-Johnson's Audio EQ Cookbook includes some formulas to help us compensate for this and have more consistent gain across the frequency spectrum.
+		double gain = 1;
+		if (filterType >= 0.5) {//Formula for if the filter is lowpass
+			gain = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);
 		}
+		else if (filterType <= -0.5) {//formula for if the filter is highpass
+			gain = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);
+		}
+		else {//Formula for if the filter is bandpass
+			double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);
+			double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);
+			double mag = sqrt(real * real + imag * imag);
+			gain = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));
+		}
+
+		if (gain != 0.0) {
+			biqCoefs[0] /= gain;
+			biqCoefs[1] /= gain;
+			biqCoefs[2] /= gain;
+		}
+
 	}
 
-	void biquadFilter() { //Copied from VoiceFunctions
+	void biquadFilter() { //This is a standard biquad filter. 
+
 		for (int i = 0; i < bufferSize; i++) {
 			for (int j = 0; j < channelCount; j++) {
 				filterInReg[j][2] = filterInReg[j][1];
 				filterInReg[j][1] = filterInReg[j][0];
-				filterInReg[j][0] = tempBuffer[i * channelCount + j];
+				filterInReg[j][0] = tempBuffer[i * channelCount + j];//Setting the input registers
 
-				tempBuffer[i * channelCount + j] = filterInReg[j][0] * biqCoefs[0] + filterInReg[j][1] * biqCoefs[1] + filterInReg[j][2] * biqCoefs[2] - filterOutReg[j][0] * biqCoefs[3] - filterOutReg[j][1] * biqCoefs[4]; //Filter math equation
+				tempBuffer[i * channelCount + j] = filterInReg[j][0] * biqCoefs[0] + filterInReg[j][1] * biqCoefs[1] + filterInReg[j][2] * biqCoefs[2] - filterOutReg[j][0] * biqCoefs[3] - filterOutReg[j][1] * biqCoefs[4]; //Biquad filter equation
 
 				filterOutReg[j][1] = filterOutReg[j][0];
-				filterOutReg[j][0] = tempBuffer[i * channelCount + j];
+				filterOutReg[j][0] = tempBuffer[i * channelCount + j]; //setting the output registers
 			}
 		}
 	}
-
 	void modulator() {
 		for (int i = 0; i < bufferSize; i++) {
 			for (int j = 0; j < channelCount; j++) {
@@ -449,6 +526,8 @@ public:
 	std::vector<std::vector<double>> filterOutReg; //Creates a 2d vector storing the filter's output registers for each channel. Not changeable.
 	std::vector<std::vector<double>> filterInReg; //Creates a 2d vector storing the filter's input registers for each channel. Not changeable.
 
+	double cutoff = cutoffSet;
+
 	Chorus() { //Initialize variables to the correct sizes
 		tempBuffer.resize(bufferSize.load() * channelCount);
 		filterOutReg.resize(channelCount, std::vector<double>(2, 0));
@@ -463,37 +542,65 @@ public:
 		else { return -1.0; }
 	}
 
-	void biquadCoefs() { //Copied from VoiceFunctions
-		double w = (2 * 3.14159) * (cutoffSet / 44100);
+	void biquadCoefs() { //Finds the coefficients 
+		//NOTE: biquad filters have a unique trait. They can be any type of filter depending on how you set your coefficients.
+		//This means they can be used as lowpass, bandpass, or highpass filters. You can even blend them together to create hybrid filters, which I do below.
+		cutoff = cutoffSet;
+		double w = (2 * 3.14159) * (cutoff / 44100);
 		double a = sin(w) / (2 * q);
 
-		if (filterType <= 0) {
-			biqCoefs[0] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (a)) / 2) / (1 + a);
+		if (filterType <= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
+			double filType = filterType * -1;
+			biqCoefs[0] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (a)) / 2) / (1 + a);
 			biqCoefs[1] = (1 - cos(w)) / (1 + a);
-			biqCoefs[2] = ((((-1) * filterType * (1 - cos(w)) / 2) + (1 - filterType * (-1)) * (0 - a)) / 2) / (1 + a);
+			biqCoefs[2] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (0 - a)) / 2) / (1 + a);
 			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}
-		else {
+		else { //If filterType < 0, I take the equation for a highpass filter and a bandpass filter and "blend" them together using a weighted average.
 			biqCoefs[0] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (a)) / 2) / (1 + a);
 			biqCoefs[1] = (filterType * (-1 + cos(w))) / (1 + a);
 			biqCoefs[2] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (-a)) / 2) / (1 + a);
 			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
+		}//This implementation allows the user too seamlessly blend between the three main filter types, giving extra control over the timbre of the synth.
+
+		//gain compensation
+		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. Robert Bristow-Johnson's Audio EQ Cookbook includes some formulas to help us compensate for this and have more consistent gain across the frequency spectrum.
+		double gain = 1;
+		if (filterType >= 0.5) {//Formula for if the filter is lowpass
+			gain = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);
 		}
+		else if (filterType <= -0.5) {//formula for if the filter is highpass
+			gain = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);
+		}
+		else {//Formula for if the filter is bandpass
+			double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);
+			double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);
+			double mag = sqrt(real * real + imag * imag);
+			gain = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));
+		}
+
+		if (gain != 0.0) {
+			biqCoefs[0] /= gain;
+			biqCoefs[1] /= gain;
+			biqCoefs[2] /= gain;
+		}
+
 	}
 
-	void biquadFilter() { //Copied from VoiceFunctions
+	void biquadFilter() { //This is a standard biquad filter. 
+
 		for (int i = 0; i < bufferSize; i++) {
 			for (int j = 0; j < channelCount; j++) {
 				filterInReg[j][2] = filterInReg[j][1];
 				filterInReg[j][1] = filterInReg[j][0];
-				filterInReg[j][0] = tempBuffer[i * channelCount + j];
+				filterInReg[j][0] = tempBuffer[i * channelCount + j];//Setting the input registers
 
-				tempBuffer[i * channelCount + j] = filterInReg[j][0] * biqCoefs[0] + filterInReg[j][1] * biqCoefs[1] + filterInReg[j][2] * biqCoefs[2] - filterOutReg[j][0] * biqCoefs[3] - filterOutReg[j][1] * biqCoefs[4]; //Filter math equation
+				tempBuffer[i * channelCount + j] = filterInReg[j][0] * biqCoefs[0] + filterInReg[j][1] * biqCoefs[1] + filterInReg[j][2] * biqCoefs[2] - filterOutReg[j][0] * biqCoefs[3] - filterOutReg[j][1] * biqCoefs[4]; //Biquad filter equation
 
 				filterOutReg[j][1] = filterOutReg[j][0];
-				filterOutReg[j][0] = tempBuffer[i * channelCount + j];
+				filterOutReg[j][0] = tempBuffer[i * channelCount + j]; //setting the output registers
 			}
 		}
 	}

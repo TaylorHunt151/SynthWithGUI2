@@ -20,9 +20,9 @@
 class Goodverb { //a reverb that (hopefully) doesn't sound like trash. Work in progress
 	//NOTE: The reverb will be based on Dattorro's Plate Reverb, a very popular reverb algorithm designed in 1997.
 public:
-	std::atomic<bool> on = false; //turns delay on or off. Controlled via checkbox in GUI.
+	std::atomic<bool> on = true; //turns delay on or off. Controlled via checkbox in GUI.
 	std::atomic<double> decayTime = 0.5; //Controls how long the reverb is. Range from 0 to 0.999. Controlled via knob. Logarithmically scaled
-	std::atomic<double> wetMix = .5; //controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI. Linearly scaled
+	std::atomic<double> wetMix = .25; //controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI. Linearly scaled
 	std::atomic<double> dampFreq = 2000; //Controls the lowpass filters in the feedback loop. Range from 30 to 20000, controlled via knob. Exponentially scaled.
 	std::atomic<int> preDelay = 300;//Controls how much the signal is delayed before going into the reverb. Range from 0 to 50,000. Controlled via knob. Exponentially scaled
 
@@ -532,12 +532,12 @@ public:
 					if (j == 0) { //Left channel mix
 						double leftOut = outA[index * 3] + outA[index * 3 + 1] - outB[index * 2] + outC[index * 2] - outD[index * 3] - outE[index * 2] - outF[index * 2];
 
-						buffer[index] = (leftOut * wet * 100 + buffer[index] * dry);//Mixing the dry and wet signal. NOTE: I'm multiplying the signal by 10 to make it louder, counteracting the attenuation I performed earlier in the signal path.
+						buffer[index] = (leftOut * wet * 1000 + buffer[index] * dry);//Mixing the dry and wet signal. NOTE: I'm multiplying the signal by 10 to make it louder, counteracting the attenuation I performed earlier in the signal path.
 					}
 					else { //Right channel mix
 						double rightOut = outD[index * 3 + 1] + outD[index * 3 + 2] - outE[index * 2 + 1] + outF[index * 2 + 1] - outA[index * 3 + 2] - outB[index * 2 + 1] - outC[index * 2 + 1];
 
-						buffer[index] = (rightOut * wet * 100 + buffer[index] * dry);
+						buffer[index] = (rightOut * wet * 1000 + buffer[index] * dry);
 					}
 				}
 			}

@@ -21,12 +21,15 @@
 #pragma once
 #include <random>
 #include "Modulators.h"
+#include <cmath>
 
 extern std::atomic<int> bufferSize; //DON'T ADD A UI ELEMENT FOR THIS
 
 extern std::vector<std::vector<double>> filterOutReg;
 extern std::vector<std::vector<double>> filterInReg;
 extern int channelCount;
+extern float filtCutoff;
+extern float oscVol;
 
 extern LFO* LFOs;
 
@@ -53,7 +56,7 @@ public:
 
 	//OSCILLATOR PARAMETERS
 	std::atomic<bool> oscOn = true; //Controlled via checkbox in the GUI. Controls whether the oscillator is on or of.
-	std::atomic<int> oscType = 3;//This should be changeable via dropdown menu, range 0 to 4
+	std::atomic<int> oscType = 1;//This should be changeable via dropdown menu, range 0 to 4
 	std::atomic<double> oscAmp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1. Scaled logarithmically.
 	std::atomic<double> oscPhaseOffset = 0.0; //This should be changeable via knob, range -1 to 1. Linear scale.
 	std::atomic<double> oscPitchShift = -0.05; //Changeable, from -1 to 1 via knob. Linear scale.
@@ -179,7 +182,7 @@ public:
 	}
 
 	std::atomic<bool> osc2On = false; //Controlled via checkbox in the GUI. Turns the oscillator on or off.
-	std::atomic<int> osc2Type = 2;//This should be changeable via dropdown menu, range 0 to 4
+	std::atomic<int> osc2Type = 1;//This should be changeable via dropdown menu, range 0 to 4
 	std::atomic<double> osc2Amp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1. Scaled logarithmically.
 	std::atomic<double> osc2PhaseOffset = 0.3; //This should be changeable via knob, range -1 to 1. Scaled linearly
 	std::atomic<double> osc2PitchShift = .1; //Changeable, from -1 to 1 via knob. Scaled linearly.
@@ -362,7 +365,7 @@ public:
 
 	//FILTER PARAMETERS
 	//std::atomic<bool> filtOn = false; //Controlled via checkbox in the GUI. Controls whether the filter is activated.
-	std::atomic<double> cutoffSet = 220.0; //this should be changeable via knob (range from 30 to 20,000, default 220. Scaled exponentially)
+	std::atomic<double> cutoffSet = 220.0; //this should be changeable via knob (range from 80 to 18,000, default 220. Scaled exponentially)
 	std::atomic<double> q = 1; //This should be changeable via knob. (range from 0.01 to 10). Linear scale
 	std::atomic<double> filterType = 1; //This should be changeable via knob. (range from -1 to 1), linear scale.
 	//std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
@@ -374,7 +377,7 @@ public:
 	void biquadCoefs(int sampleRate) { //Finds the coefficients 
 		//NOTE: biquad filters have a unique trait. They can be any type of filter depending on how you set your coefficients.
 		//This means they can be used as lowpass, bandpass, or highpass filters. You can even blend them together to create hybrid filters, which I do below.
-
+		//cutoff = cutoffSet;
 		double w = (2 * 3.14159) * (cutoff / sampleRate);
 		double a = sin(w) / (2 * q);
 
@@ -394,11 +397,40 @@ public:
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}//This implementation allows the user too seamlessly blend between the three main filter types, giving extra control over the timbre of the synth.
 
+		//gain compensation
+		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. 
+		double gainLP = 1;
+		double gainHP = 1;
+		double gainBP = 1;
+		double gain = 1;
+
+		gainLP = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);//calculates gain at DC for the lowpass filter (DC = 0hz)
+
+		gainHP = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);//calculates gain at Nyquist for the highpass filter (nyquist is the highest frequency in the signal)
+
+		double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);//calculates the real portion of the gain at the center frequency for bandpass
+		double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);//Calculates the imaginary portion of the bandpass gain
+		double mag = sqrt(real * real + imag * imag);//computes the magnitude by combining the real and imaginary portions together
+		gainBP = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));//Calculates the gain at the cutoff frequency for the bandpass filter
+
+
+		if (filterType >= 0) {//Calculates overall gain if the filter is bandpass, lowpass, or anything in-between
+			gain = filterType * gainLP + (1 - filterType) * gainBP;
+		}
+		else {//Calculates for overall gain if the filter is highpass, bandpass, or anywhere in-between.
+			gain = (filterType)*gainHP + (1 + filterType) * gainBP;
+		}
+
+		if (gain != 0.0) {
+			biqCoefs[0] /= gain;
+			biqCoefs[1] /= gain;
+			biqCoefs[2] /= gain;
+		}
 
 	}
 
 	void biquadFilter() { //This is a standard biquad filter. 
-
+		
 		for (int i = 0; i < bufferSize; i++) {
 			for (int j = 0; j < channelCount; j++) {
 				filterInReg[j][2] = filterInReg[j][1];
@@ -414,5 +446,8 @@ public:
 		
 	}
 
-
+	void setVars() {
+		cutoffSet = filtCutoff;
+		oscAmp = oscVol;
+	}
 };

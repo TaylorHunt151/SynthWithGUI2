@@ -138,6 +138,9 @@ private:
             if (voices[i].keyTrack) {
                 voices[i].cutoff = (voices[i].oscFreq - 220) + voices[i].cutoffSet;
             }
+            else {
+                voices[i].cutoff = voices[i].cutoffSet;
+            }
         }
     }
 	

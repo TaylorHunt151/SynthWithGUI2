@@ -47,6 +47,12 @@ Flanger* flanger = new Flanger();
 Chorus* chorus = new Chorus();
 Goodverb* goodverb = new Goodverb();
 
+
+
+//Creating global variables
+float filtCutoff = 220;
+float oscVol = 0.1;
+
 //This loop is called by the audio device once per buffer. It generates audio data in batches and writes it to the buffer.
 int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
     double streamTime, RtAudioStreamStatus status, void* userData)
@@ -68,7 +74,7 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
 
     for (int i = 0; i < voiceCount; i++) {
 
-        //noteSetter(i); //sets the osc frequency based on the note selected
+        voices[i].setVars();
 
         voices[i].oscillator(nBufferFrames, channelCount); //This is where the oscillator method is called.
         voices[i].oscillator2(nBufferFrames, channelCount);
@@ -83,7 +89,7 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
         }
 
     }
-    flanger->flanger(buffer);
+    //flanger->flanger(buffer);
     chorus->chorus(buffer);
     dly->delay(buffer);
     goodverb->reverb(buffer);
@@ -161,7 +167,7 @@ class KnobControl : public wxPanel {
 public:
     KnobControl(wxWindow* parent, wxWindowID id = wxID_ANY, int minValue = 0, int maxValue = 100)
         : wxPanel(parent, id, wxDefaultPosition, wxSize(60, 60), wxBORDER_SIMPLE),
-        minValue(minValue), maxValue(maxValue), value((minValue + maxValue) / 2), angle(0) {
+        minValue(minValue), maxValue(maxValue), value((minValue + maxValue) / 2), angle(0), varToChange(varToChange){
 
         SetBackgroundStyle(wxBG_STYLE_PAINT); //Avoid flickering
         Bind(wxEVT_PAINT, &KnobControl::OnPaint, this);
@@ -181,6 +187,7 @@ public:
 
 private:
     int minValue, maxValue, value, xPrevious, yPrevious;
+    float& varToChange;
     double angle = 0;
     bool isDragging = false;
 
@@ -219,6 +226,13 @@ private:
             yPrevious = pos.y;
             //Map angle to value
             value = minValue + (angle + 135) * (maxValue - minValue) / 270;
+            if (value < minValue) {
+                value = minValue;
+            }
+            else if (value > maxValue) {
+                value = maxValue;
+            }
+            //varToChange = value;
             Refresh();
         }
     }
@@ -238,7 +252,7 @@ private:
 //THE AUDIO AND GUI MUST BE COMPUTED ON SEPARATE THREADS. OTHERWISE THE AUDIO PROCESSING LOOP WILL NOT RUN.
 //****************************************************************************************************************************************************************
 
- std::atomic<double> cutoffSet = 220.0;
+ //std::atomic<double> cutoffSet = 220.0;
 
 class App : public wxApp {
 public:
@@ -253,8 +267,8 @@ public:
         volumeKnob->SetValue(50);
 
         // Cutoff knob
-        KnobControl* cutoffKnob = new KnobControl(panel, wxID_ANY, 30, 20000);
-        cutoffKnob->SetValue(static_cast<int>(cutoffSet.load()));
+        KnobControl* cutoffKnob = new KnobControl(panel, wxID_ANY, 80, 18000);
+        cutoffKnob->SetValue(filtCutoff);
 
         // Debug box (multiline, readonly)
         wxTextCtrl* debugBox = new wxTextCtrl(panel, wxID_ANY, "",
@@ -290,11 +304,12 @@ public:
         // Timer updating cutoffSet and debug info regularly
         wxTimer* updateTimer = new wxTimer(window);
         window->Bind(wxEVT_TIMER, [=](wxTimerEvent&) {
-            cutoffSet.store(static_cast<double>(cutoffKnob->GetValue()));
+            //cutoffSet.store(static_cast<double>(cutoffKnob->GetValue()));
+            filtCutoff = static_cast<double>(cutoffKnob->GetValue());
 
             // Output current cutoffSet value clearly for debugging
             debugBox->SetValue(wxString::Format("Cutoff: %.2f\nVolume: %d",
-                cutoffSet.load(), volumeKnob->GetValue()));
+                filtCutoff, volumeKnob->GetValue()));
             });
         updateTimer->Start(50); // Update every 50ms
 
