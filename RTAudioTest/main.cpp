@@ -4,7 +4,7 @@
 #include <atomic>  //Allows you to create atomic variables. Atomic variables are special variables that can be read and written to by multiple threads without causing race conditions.
 #include "VoiceFunctions.h" //This header file contains the synth voice class. It will contain the oscillator, envelope, and filter methods that will be used throughout the code.
 #include "KeyInputManager.h" //Manages keyboard input
-#include "stdc++.h"
+#include "stdc++.h"//
 #include <stdio.h>
 #include <vector>
 #include <algorithm>
@@ -15,7 +15,7 @@
 #include "fxRack.h"
 #include <wx/dcbuffer.h> //Add this include for wxAutoBufferedPaintDC
 #include "Goodverb.h"
-
+#include "GUI.h"
 
 
 
@@ -49,9 +49,29 @@ Goodverb* goodverb = new Goodverb();
 
 
 
-//Creating global variables
+//Creating global variables for the voice objects
 float filtCutoff = 220;
 float oscVol = 0.1;
+bool oscToggle = true;
+int oscWave = 1;
+double oscPhsOff = 0;
+double oscPtchShft = 0;
+
+bool osc2Toggle = true;
+int osc2Wave = 1;
+double osc2Vol = 0.01;
+double osc2PhsOff = 0;
+double osc2PtchShft = 0.1;
+
+double atk = 0.1;
+double dcy = 1;
+double sus = 0.5;
+double rls = 0.5;
+
+double filtQ = 1;
+double filtType = 1;
+bool keyTrck = false;
+
 
 //This loop is called by the audio device once per buffer. It generates audio data in batches and writes it to the buffer.
 int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
@@ -91,8 +111,8 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
     }
     //flanger->flanger(buffer);
     //chorus->chorus(buffer);
-    //dly->delay(buffer);
-    goodverb->reverb(buffer);
+    dly->delay(buffer);
+    //goodverb->reverb(buffer);
     //distortion->distort(buffer);
 
 
@@ -101,7 +121,7 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
 }
 
 class AudioManager {
-public:
+public: 
     AudioManager() : running(false) {}
 
     void start() {//Starts the audio on a separate thread so 
@@ -163,88 +183,6 @@ private:
 };
 
 
-class KnobControl : public wxPanel {
-public:
-    KnobControl(wxWindow* parent, wxWindowID id = wxID_ANY, int minValue = 0, int maxValue = 100)
-        : wxPanel(parent, id, wxDefaultPosition, wxSize(60, 60), wxBORDER_SIMPLE),
-        minValue(minValue), maxValue(maxValue), value((minValue + maxValue) / 2), angle(0), varToChange(varToChange){
-
-        SetBackgroundStyle(wxBG_STYLE_PAINT); //Avoid flickering
-        Bind(wxEVT_PAINT, &KnobControl::OnPaint, this);
-        Bind(wxEVT_LEFT_DOWN, &KnobControl::OnMouseDown, this);
-        Bind(wxEVT_MOTION, &KnobControl::OnMouseMove, this);
-        Bind(wxEVT_LEFT_UP, &KnobControl::OnMouseUp, this);
-    }
-
-    int GetValue() const { return value; }
-    void SetValue(int newValue) {
-        if (newValue < minValue) newValue = minValue;
-        if (newValue > maxValue) newValue = maxValue;
-        value = newValue;
-        angle = (value - minValue) * 270.0 / (maxValue - minValue) - 135; //Map value to angle (-135° to 135°)
-        Refresh();
-    }
-
-private:
-    int minValue, maxValue, value, xPrevious, yPrevious;
-    float& varToChange;
-    double angle = 0;
-    bool isDragging = false;
-
-
-    void OnPaint(wxPaintEvent&) {
-        wxAutoBufferedPaintDC dc(this);
-        dc.Clear();
-        dc.SetBrush(*wxLIGHT_GREY_BRUSH);
-        dc.DrawCircle(30, 30, 20); //Draw the knob background
-
-        //Draw indicator line based on angle
-        double radians = angle * M_PI / 180.0;
-        int x = 30 + 15 * cos(radians);
-        int y = 30 - 15 * sin(radians);
-        dc.SetPen(wxPen(*wxBLACK, 2));
-        dc.DrawLine(30, 30, x, y);
-    }
-
-    void OnMouseDown(wxMouseEvent& event) {
-        wxPoint pos = event.GetPosition();
-        xPrevious = pos.x;
-        yPrevious = pos.y;
-        isDragging = true;
-        CaptureMouse();
-    }
-
-    void OnMouseMove(wxMouseEvent& event) {
-        if (isDragging) {
-            wxPoint pos = event.GetPosition();
-
-            //double newAngle = atan2(30 - pos.y, pos.x - 30) * 180 / M_PI;
-            //newAngle = wxClip(newAngle, -135, 135); //Limit rotation
-            //angle = newAngle;
-            angle += ((pos.y - yPrevious) - (pos.x - xPrevious)); //New equation for the knob angle. When the mouse moves up or to the right, the knob turns clockwise. When it moves down or to the left, the knob turns counter-clockwise.
-            xPrevious = pos.x;
-            yPrevious = pos.y;
-            //Map angle to value
-            value = minValue + (angle + 135) * (maxValue - minValue) / 270;
-            if (value < minValue) {
-                value = minValue;
-            }
-            else if (value > maxValue) {
-                value = maxValue;
-            }
-            //varToChange = value;
-            Refresh();
-        }
-    }
-
-    void OnMouseUp(wxMouseEvent&) {
-        if (isDragging) {
-            isDragging = false;
-            ReleaseMouse();
-        }
-    }
-};
-
 
 //****************************************************************************************************************************************************************
 //BELOW IS THE GUI CODE
@@ -262,36 +200,7 @@ public:
         wxFrame* window = new wxFrame(NULL, wxID_ANY, "GUI Test", wxDefaultPosition, wxSize(600, 400));
         wxPanel* panel = new wxPanel(window);
 
-        // Existing volume knob
-        KnobControl* volumeKnob = new KnobControl(panel, wxID_ANY, 0, 100);
-        volumeKnob->SetValue(50);
-
-        // Cutoff knob
-        KnobControl* cutoffKnob = new KnobControl(panel, wxID_ANY, 80, 18000);
-        cutoffKnob->SetValue(filtCutoff);
-
-        // Debug box (multiline, readonly)
-        wxTextCtrl* debugBox = new wxTextCtrl(panel, wxID_ANY, "",
-            wxDefaultPosition, wxSize(200, 100),
-            wxTE_MULTILINE | wxTE_READONLY | wxBORDER_SIMPLE);
-
-        // Main vertical sizer to organize everything
-        wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
-        wxBoxSizer* knobSizer = new wxBoxSizer(wxHORIZONTAL);
-        knobSizer->Add(volumeKnob, 0, wxALL, 15);
-        knobSizer->Add(cutoffKnob, 0, wxALL, 15);
-
-        mainSizer->Add(knobSizer, 0, wxALIGN_CENTER);
-
-        // Align debug box to bottom-right corner
-        wxBoxSizer* bottomSizer = new wxBoxSizer(wxHORIZONTAL);
-        bottomSizer->AddStretchSpacer(1);
-        bottomSizer->Add(debugBox, 0, wxALL | wxALIGN_RIGHT | wxALIGN_BOTTOM, 10);
-
-        mainSizer->AddStretchSpacer(1);
-        mainSizer->Add(bottomSizer, 0, wxEXPAND);
-
-        panel->SetSizer(mainSizer);
+        guiSetup(panel, window);
 
         window->Show();
         window->SetFocus();
@@ -303,14 +212,7 @@ public:
 
         // Timer updating cutoffSet and debug info regularly
         wxTimer* updateTimer = new wxTimer(window);
-        window->Bind(wxEVT_TIMER, [=](wxTimerEvent&) {
-            //cutoffSet.store(static_cast<double>(cutoffKnob->GetValue()));
-            filtCutoff = static_cast<double>(cutoffKnob->GetValue());
 
-            // Output current cutoffSet value clearly for debugging
-            debugBox->SetValue(wxString::Format("Cutoff: %.2f\nVolume: %d",
-                filtCutoff, volumeKnob->GetValue()));
-            });
         updateTimer->Start(50); // Update every 50ms
 
         return true;

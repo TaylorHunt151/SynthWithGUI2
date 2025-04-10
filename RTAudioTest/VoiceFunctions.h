@@ -28,8 +28,30 @@ extern std::atomic<int> bufferSize; //DON'T ADD A UI ELEMENT FOR THIS
 extern std::vector<std::vector<double>> filterOutReg;
 extern std::vector<std::vector<double>> filterInReg;
 extern int channelCount;
+
 extern float filtCutoff;
 extern float oscVol;
+extern bool oscToggle;
+extern int oscWave;
+extern double oscPhsOff;
+extern double oscPtchShft;
+
+extern bool osc2Toggle;
+extern int osc2Wave;
+extern double osc2Vol;
+extern double osc2PhsOff;
+extern double osc2PtchShft;
+
+extern double atk;
+extern double dcy;
+extern double sus;
+extern double rls;
+
+extern double filtQ;
+extern double filtType;
+extern bool keyTrck;
+
+
 
 extern LFO* LFOs;
 
@@ -57,7 +79,7 @@ public:
 	//OSCILLATOR PARAMETERS
 	std::atomic<bool> oscOn = true; //Controlled via checkbox in the GUI. Controls whether the oscillator is on or of.
 	std::atomic<int> oscType = 1;//This should be changeable via dropdown menu, range 0 to 4
-	std::atomic<double> oscAmp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1. Scaled logarithmically.
+	std::atomic<double> oscAmp = 0.01;//This should be changeable via knob/slider, range 0 to 0.1. Scaled logarithmically.
 	std::atomic<double> oscPhaseOffset = 0.0; //This should be changeable via knob, range -1 to 1. Linear scale.
 	std::atomic<double> oscPitchShift = -0.05; //Changeable, from -1 to 1 via knob. Linear scale.
 
@@ -181,9 +203,9 @@ public:
 		}
 	}
 
-	std::atomic<bool> osc2On = false; //Controlled via checkbox in the GUI. Turns the oscillator on or off.
+	std::atomic<bool> osc2On = true; //Controlled via checkbox in the GUI. Turns the oscillator on or off.
 	std::atomic<int> osc2Type = 1;//This should be changeable via dropdown menu, range 0 to 4
-	std::atomic<double> osc2Amp = 0.001;//This should be changeable via knob/slider, range 0 to 0.1. Scaled logarithmically.
+	std::atomic<double> osc2Amp = 0.01;//This should be changeable via knob/slider, range 0 to 0.1. Scaled logarithmically.
 	std::atomic<double> osc2PhaseOffset = 0.3; //This should be changeable via knob, range -1 to 1. Scaled linearly
 	std::atomic<double> osc2PitchShift = .1; //Changeable, from -1 to 1 via knob. Scaled linearly.
 
@@ -308,7 +330,7 @@ public:
 	//ENVELOPE PARAMETERS
 	std::atomic<double> attack = .1;//This should be changeable via slider (range from 0.01 to 20). Exponential scale.
 	std::atomic<double> decay = .1;//This should be changeable via slider (range from 0.01 to 20). Exponential scale.
-	std::atomic<double> sustain = 0;//This should be changeable via slider (range from 0 to 1). Exponential scale.
+	std::atomic<double> sustain = 0.5;//This should be changeable via slider (range from 0 to 1). Exponential scale.
 	std::atomic<double> release = .1;//This should be changeable via slider (range from 0.01 to 20). Exponential scale.
 
 	int oscAmpGoal = 0;//not changeable
@@ -446,8 +468,27 @@ public:
 		
 	}
 
-	void setVars() {
+	void setVars() { //In order to set the variables from outside the audio thread, I use global variables as a sort-of middleman. This is super hacky. I'm sure there's a faster and better way to do this, but I'm too tired to care.
 		cutoffSet = filtCutoff;
 		oscAmp = oscVol;
+		oscOn = oscToggle;
+		oscType = oscWave;
+		oscPhaseOffset = oscPhsOff;
+		oscPitchShift = oscPtchShft;
+
+		osc2On = osc2Toggle;
+		osc2Amp = osc2Vol;
+		osc2PhaseOffset = osc2PhsOff;
+		osc2PitchShift = osc2PtchShft;
+
+		attack = atk;
+		decay = dcy;
+		sustain = sus;
+		release = rls;
+
+		q = filtQ;
+		filterType = filtType;
+		keyTrack = keyTrck;
+
 	}
 };

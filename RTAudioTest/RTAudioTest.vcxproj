@@ -147,6 +147,7 @@
   <ItemGroup>
     <ClInclude Include="fxRack.h" />
     <ClInclude Include="Goodverb.h" />
+    <ClInclude Include="GUI.h" />
     <ClInclude Include="KeyInputManager.h" />
     <ClInclude Include="Modulators.h" />
     <ClInclude Include="RtAudio.h" />
