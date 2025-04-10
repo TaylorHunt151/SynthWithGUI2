@@ -31,25 +31,25 @@ extern int channelCount;
 
 extern float filtCutoff;
 extern float oscVol;
-extern bool oscToggle;
-extern int oscWave;
-extern double oscPhsOff;
-extern double oscPtchShft;
-
-extern bool osc2Toggle;
-extern int osc2Wave;
-extern double osc2Vol;
-extern double osc2PhsOff;
-extern double osc2PtchShft;
-
-extern double atk;
-extern double dcy;
-extern double sus;
-extern double rls;
-
-extern double filtQ;
-extern double filtType;
-extern bool keyTrck;
+//extern bool oscToggle;
+//extern int oscWave;
+//extern double oscPhsOff;
+//extern double oscPtchShft;
+//
+//extern bool osc2Toggle;
+//extern int osc2Wave;
+//extern double osc2Vol;
+//extern double osc2PhsOff;
+//extern double osc2PtchShft;
+//
+//extern double atk;
+//extern double dcy;
+//extern double sus;
+//extern double rls;
+//
+//extern double filtQ;
+//extern double filtType;
+//extern bool keyTrck;
 
 
 
@@ -471,24 +471,24 @@ public:
 	void setVars() { //In order to set the variables from outside the audio thread, I use global variables as a sort-of middleman. This is super hacky. I'm sure there's a faster and better way to do this, but I'm too tired to care.
 		cutoffSet = filtCutoff;
 		oscAmp = oscVol;
-		oscOn = oscToggle;
-		oscType = oscWave;
-		oscPhaseOffset = oscPhsOff;
-		oscPitchShift = oscPtchShft;
+		//oscOn = oscToggle;
+		//oscType = oscWave;
+		//oscPhaseOffset = oscPhsOff;
+		//oscPitchShift = oscPtchShft;
 
-		osc2On = osc2Toggle;
-		osc2Amp = osc2Vol;
-		osc2PhaseOffset = osc2PhsOff;
-		osc2PitchShift = osc2PtchShft;
+		//osc2On = osc2Toggle;
+		//osc2Amp = osc2Vol;
+		//osc2PhaseOffset = osc2PhsOff;
+		//osc2PitchShift = osc2PtchShft;
 
-		attack = atk;
-		decay = dcy;
-		sustain = sus;
-		release = rls;
+		//attack = atk;
+		//decay = dcy;
+		//sustain = sus;
+		//release = rls;
 
-		q = filtQ;
-		filterType = filtType;
-		keyTrack = keyTrck;
+		//q = filtQ;
+		//filterType = filtType;
+		//keyTrack = keyTrck;
 
 	}
 };

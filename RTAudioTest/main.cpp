@@ -1,10 +1,10 @@
-#include <wx/wx.h> //GUI library
+﻿#include <wx/wx.h> //GUI library
 #include "RtAudio.h" //Audio library header file
 #include <thread> //This lets you create a new thread to run the audio independent of the GUI
 #include <atomic>  //Allows you to create atomic variables. Atomic variables are special variables that can be read and written to by multiple threads without causing race conditions.
 #include "VoiceFunctions.h" //This header file contains the synth voice class. It will contain the oscillator, envelope, and filter methods that will be used throughout the code.
 #include "KeyInputManager.h" //Manages keyboard input
-#include "stdc++.h"//
+#include "stdc++.h"
 #include <stdio.h>
 #include <vector>
 #include <algorithm>
@@ -15,7 +15,7 @@
 #include "fxRack.h"
 #include <wx/dcbuffer.h> //Add this include for wxAutoBufferedPaintDC
 #include "Goodverb.h"
-#include "GUI.h"
+
 
 
 
@@ -49,29 +49,9 @@ Goodverb* goodverb = new Goodverb();
 
 
 
-//Creating global variables for the voice objects
+//Creating global variables
 float filtCutoff = 220;
 float oscVol = 0.1;
-bool oscToggle = true;
-int oscWave = 1;
-double oscPhsOff = 0;
-double oscPtchShft = 0;
-
-bool osc2Toggle = true;
-int osc2Wave = 1;
-double osc2Vol = 0.01;
-double osc2PhsOff = 0;
-double osc2PtchShft = 0.1;
-
-double atk = 0.1;
-double dcy = 1;
-double sus = 0.5;
-double rls = 0.5;
-
-double filtQ = 1;
-double filtType = 1;
-bool keyTrck = false;
-
 
 //This loop is called by the audio device once per buffer. It generates audio data in batches and writes it to the buffer.
 int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
@@ -111,8 +91,8 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
     }
     //flanger->flanger(buffer);
     //chorus->chorus(buffer);
-    dly->delay(buffer);
-    //goodverb->reverb(buffer);
+    //dly->delay(buffer);
+    goodverb->reverb(buffer);
     //distortion->distort(buffer);
 
 
@@ -121,7 +101,7 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
 }
 
 class AudioManager {
-public: 
+public:
     AudioManager() : running(false) {}
 
     void start() {//Starts the audio on a separate thread so 
@@ -182,6 +162,61 @@ private:
     std::atomic<bool> running; //DON'T ADD A UI ELEMENT FOR THIS. This value is used to stop the audio thread when the program closes. Since the stop() function is called by the App class destructor, it is declared as an atomic to avoic race conditions. DON'T ADD A UI ELEMENT FOR THIS
 };
 
+
+class KnobControl : public wxPanel {
+public:
+    KnobControl(wxWindow* parent, wxWindowID id = wxID_ANY, int minValue = 0, int maxValue = 100)
+        : wxPanel(parent, id, wxDefaultPosition, wxSize(60, 60), wxBORDER_SIMPLE),
+        minValue(minValue), maxValue(maxValue), value((minValue + maxValue) / 2), angle(0), varToChange(varToChange) {
+
+        SetBackgroundStyle(wxBG_STYLE_PAINT); //Avoid flickering
+        Bind(wxEVT_PAINT, &KnobControl::OnPaint, this);
+        Bind(wxEVT_LEFT_DOWN, &KnobControl::OnMouseDown, this);
+        Bind(wxEVT_MOTION, &KnobControl::OnMouseMove, this);
+        Bind(wxEVT_LEFT_UP, &KnobControl::OnMouseUp, this);
+    }
+
+    int GetValue() const { return value; }
+    void SetValue(int newValue) {
+        if (newValue < minValue) newValue = minValue;
+        if (newValue > maxValue) newValue = maxValue;
+        value = newValue;
+        angle = (value - minValue) * 270.0 / (maxValue - minValue) - 135; //Map value to angle (-135� to 135�)
+        Refresh();
+    }
+
+private:
+    int minValue, maxValue, value, xPrevious, yPrevious;
+    float& varToChange;
+    double angle = 0;
+    bool isDragging = false;
+
+
+    void OnPaint(wxPaintEvent&) {
+        wxAutoBufferedPaintDC dc(this);
+        dc.Clear();
+        dc.SetBrush(*wxLIGHT_GREY_BRUSH);
+        dc.DrawCircle(30, 30, 20); //Draw the knob background
+
+        //Draw indicator line based on angle
+        double radians = angle * M_PI / 180.0;
+        int x = 30 + 15 * cos(radians);
+        int y = 30 - 15 * sin(radians);
+        dc.SetPen(wxPen(*wxBLACK, 2));
+        dc.DrawLine(30, 30, x, y);
+    }
+
+    void OnMouseDown(wxMouseEvent& event) {
+        wxPoint pos = event.GetPosition();
+        xPrevious = pos.x;
+        yPrevious = pos.y;
+        isDragging = true;
+        CaptureMouse();
+    }
+
+    void OnMouseMove(wxMouseEvent& event) {
+        if (isDragging) {
+            wxPoint pos = event.GetPosition();
 
             // Calculate the delta based on mouse movement.
             int delta = ((pos.y - yPrevious) - (pos.x - xPrevious));
