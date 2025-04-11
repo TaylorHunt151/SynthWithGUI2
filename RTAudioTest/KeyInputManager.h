@@ -49,47 +49,34 @@ public:
 
     void OnKeyDown(wxKeyEvent& event) {
         currentKey = event.GetUnicodeKey();
+        char keyChar = toupper(currentKey);
+        if (keyChar >= 'A' && keyChar <= 'P') {
+            int index = keyChar - 'A';
+            // Only set if not already pressed.
+            if (noteSet[index] == ' ') {
+                noteSet[index] = keyChar;
 
-        if ((currentKey >= 'A' && currentKey <= 'Z') || (currentKey >= '0' && currentKey <= '9')) { //Checks if key is a valid input
-            if (keyToVoiceMap.find(currentKey) == keyToVoiceMap.end()) { //If the key is not already being held
-                noteSet[voiceIncrement] = currentKey; //Sets the voice's note to the current key
-                keyToVoiceMap[currentKey] = voiceIncrement; //Map the key to the current voice
-                voices[voiceIncrement].adsrState = 0;
-                voices[voiceIncrement].oscAmpGoal = 1;
-                noteSetter(voiceIncrement);
-
-                if (voiceIncrement < (voiceCount - 1)) { //Increments the voice tracker, preparing the input manager to set the next note.
-                    voiceIncrement++;
-                }
-                else { //Round-robins the voice tracker
-                    voiceIncrement = 0;
-                }
+                voices[index].adsrState = 0;
+                voices[index].oscAmpGoal = 1;
+                noteSetter(index);
             }
         }
-
-        event.Skip(); //Skip the event to allow further processing
+        event.Skip();
     }
 
-	//Handles key up events
     void OnKeyUp(wxKeyEvent& event) {
-        currentKey = event.GetUnicodeKey(); //Set current key
-
-        if ((currentKey >= 'A' && currentKey <= 'Z') || (currentKey >= '0' && currentKey <= '9')) { //Checks if key is a valid input
-            auto it = keyToVoiceMap.find(currentKey);
-            if (it != keyToVoiceMap.end()) { //If the key is found in the map
-                int voiceIndex = it->second;
-                noteSet[voiceIndex] = ' ';
-                voices[voiceIndex].oscAmpGoal = 0;
-                voices[voiceIndex].adsrState = 3;
-                keyToVoiceMap.erase(it); //Remove the key from the map
-                noteSetter(voiceIndex);
-            }
+        currentKey = event.GetUnicodeKey();
+        char keyChar = toupper(currentKey);
+        if (keyChar >= 'A' && keyChar <= 'P') {
+            int index = keyChar - 'A';
+            noteSet[index] = ' ';
+            voices[index].oscAmpGoal = 0;
+            voices[index].adsrState = 3;
+            noteSetter(index);
         }
+        event.Skip();
 
-        event.Skip(); //Skip the event to allow further processing
     }
-
-
 
 
 private:

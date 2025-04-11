@@ -15,6 +15,8 @@
 #include "fxRack.h"
 #include <wx/dcbuffer.h> //Add this include for wxAutoBufferedPaintDC
 #include "Goodverb.h"
+#include "GUI.h"
+#include "GUI2.h"
 
 
 
@@ -320,7 +322,8 @@ class App : public wxApp {
 public:
 
 
-    bool OnInit() {  // Create the main window and panel.
+    bool OnInit() {
+        // Create the main window and panel.
         wxFrame* window = new wxFrame(NULL, wxID_ANY, "Synthesizer", wxDefaultPosition, wxSize(800, 600));
         wxPanel* panel = new wxPanel(window);
 
@@ -330,93 +333,74 @@ public:
         wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
 
         // -------------------------------------------------
-        // TOP ROW: Envelope Generator (EG) Box (Upper Right Corner).
+        // TOP ROW: EG Box in Upper Right Corner (2x2 grid).
         // -------------------------------------------------
         wxBoxSizer* topSizer = new wxBoxSizer(wxHORIZONTAL);
-        topSizer->AddStretchSpacer(1);  // Push content to the right.
+        topSizer->AddStretchSpacer(1); // Push EG box to the right.
 
-        // Create a static box for the Envelope Generator.
         wxStaticBox* egBox = new wxStaticBox(panel, wxID_ANY, "Envelope Generator");
-        // Use a grid sizer for a 2x2 layout.
-        wxGridSizer* egGrid = new wxGridSizer(2, 2, 10, 10);  // 2 rows, 2 columns, 10-pixel gap.
+        wxGridSizer* egGrid = new wxGridSizer(2, 2, 10, 10); // 2 rows, 2 columns, 10px gap.
 
-        // Create EG knobs:
-        // Attack knob: range 1 to 20, default 1.
         KnobControl* attackKnob = new KnobControl(panel, wxID_ANY, 1, 20);
         attackKnob->SetValue(1);
-
-        // Decay knob: range 1 to 20, default 1.
         KnobControl* decayKnob = new KnobControl(panel, wxID_ANY, 1, 20);
         decayKnob->SetValue(1);
-
-        // Sustain knob: range 0 to 1, default 0.
         KnobControl* sustainKnob = new KnobControl(panel, wxID_ANY, 0, 1);
         sustainKnob->SetValue(0);
-
-        // Release knob: range 1 to 20, default 1.
         KnobControl* releaseKnob = new KnobControl(panel, wxID_ANY, 1, 20);
         releaseKnob->SetValue(1);
 
-        // Add the knobs to the grid: top row (Attack, Decay), bottom row (Sustain, Release).
+        // Add knobs to the grid in order: Attack, Decay; Sustain, Release.
         egGrid->Add(attackKnob, 0, wxEXPAND);
         egGrid->Add(decayKnob, 0, wxEXPAND);
         egGrid->Add(sustainKnob, 0, wxEXPAND);
         egGrid->Add(releaseKnob, 0, wxEXPAND);
 
-        // Embed the grid into a static box sizer.
         wxStaticBoxSizer* egBoxSizer = new wxStaticBoxSizer(egBox, wxVERTICAL);
         egBoxSizer->Add(egGrid, 0, wxALL, 10);
         topSizer->Add(egBoxSizer, 0, wxALL, 10);
         mainSizer->Add(topSizer, 0, wxEXPAND);
 
         // -------------------------------------------------
-        // LOWER ROW: PianoKeyboard Visualization & Debugging Box.
+        // LOWER ROW: Keyboard Visualization and Debugging Box.
         // -------------------------------------------------
         wxBoxSizer* lowerSizer = new wxBoxSizer(wxHORIZONTAL);
 
-        // Create the PianoKeyboard control.
         PianoKeyboard* pianoKeyboard = new PianoKeyboard(panel, wxID_ANY);
         pianoKeyboard->SetMinSize(wxSize(600, 100));
 
-        // Create the debugging box. Increase the size to accommodate all debug info.
+        // Increase the debug box size to 200x300 so all text is visible (no scrolling needed).
         wxTextCtrl* debugBox = new wxTextCtrl(panel, wxID_ANY, "",
-            wxDefaultPosition, wxSize(200, 300),  // Fixed larger size: 200x300.
+            wxDefaultPosition, wxSize(200, 300),
             wxTE_MULTILINE | wxTE_READONLY | wxBORDER_SIMPLE);
 
-        // Arrange: Center the PianoKeyboard and position the debug box to its right.
         lowerSizer->AddStretchSpacer(1);
         lowerSizer->Add(pianoKeyboard, 0, wxALL, 10);
         lowerSizer->Add(debugBox, 0, wxALL | wxALIGN_RIGHT, 10);
         lowerSizer->AddStretchSpacer(1);
-
         mainSizer->Add(lowerSizer, 0, wxEXPAND | wxALL, 10);
 
-        // Set the sizer for the panel and show the window.
         panel->SetSizer(mainSizer);
         window->Show();
         window->SetFocus();
 
         // -------------------------------------------------
-        // Key Event Bindings.
+        // Key Event Bindings: Update our KeyInputManager and refresh the PianoKeyboard.
         // -------------------------------------------------
-        // Bind key down events.
         window->Bind(wxEVT_KEY_DOWN, [=](wxKeyEvent& event) {
             char key = static_cast<char>(event.GetUnicodeKey());
             key = toupper(key);
-            wxLogMessage("Key Down: %c", key);
-            // Update the PianoKeyboard refresh if key between 'A' and 'P'.
             if (key >= 'A' && key <= 'P') {
+                // Refresh immediately so the key color updates.
                 pianoKeyboard->Refresh();
             }
             keyInputManager->OnKeyDown(event);
             event.Skip();
             });
 
-        // Bind key up events.
         window->Bind(wxEVT_KEY_UP, [=](wxKeyEvent& event) {
             char key = static_cast<char>(event.GetUnicodeKey());
             key = toupper(key);
-            wxLogMessage("Key Up: %c", key);
             if (key >= 'A' && key <= 'P') {
                 pianoKeyboard->Refresh();
             }
@@ -425,17 +409,15 @@ public:
             });
 
         // -------------------------------------------------
-        // Timer: Update the Debugging Box with EG knob values and Keyboard States.
+        // Timer: Update the Debugging Box with EG values and Keyboard States.
         // -------------------------------------------------
         wxTimer* updateTimer = new wxTimer(window);
         window->Bind(wxEVT_TIMER, [=](wxTimerEvent&) {
-            // Retrieve envelope knob values.
             int attackVal = attackKnob->GetValue();
             int decayVal = decayKnob->GetValue();
             int sustainVal = sustainKnob->GetValue();
             int releaseVal = releaseKnob->GetValue();
 
-            // Build the debug string.
             wxString debugText;
             debugText << "Envelope Generator:\n";
             debugText << "Attack: " << attackVal << "\n";
@@ -444,9 +426,9 @@ public:
             debugText << "Release: " << releaseVal << "\n\n";
             debugText << "Keyboard States:\n";
 
-            // Append the state of keys from A to P.
-            // Assume noteSet has at least 16 entries.
-            for (size_t i = 0; i < keyInputManager->noteSet.size() && i < 16; i++) {
+            // Assume noteSet has at least 16 entries for keys A-P.
+            size_t numKeys = keyInputManager->noteSet.size();
+            for (size_t i = 0; i < numKeys && i < 16; i++) {
                 char keyLabel = 'A' + i;
                 char noteValue = keyInputManager->noteSet[i];
                 wxString state;
@@ -458,13 +440,16 @@ public:
             }
             debugBox->SetValue(debugText);
             });
-        updateTimer->Start(50); // Update every 50 milliseconds.
+        updateTimer->Start(50); // Update every 50 ms.
 
-        // Start audio processing.
+        // -------------------------------------------------
+        // Start Audio Processing.
+        // -------------------------------------------------
         audioManager.start();
 
         return true;
     }
+
 
     int OnExit() noexcept {
         audioManager.stop();
