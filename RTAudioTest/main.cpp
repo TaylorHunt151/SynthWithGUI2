@@ -91,8 +91,8 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
         }
 
     }
-    //flanger->flanger(buffer);
-    //chorus->chorus(buffer);
+    flanger->flanger(buffer);
+    chorus->chorus(buffer);
     //dly->delay(buffer);
     goodverb->reverb(buffer);
     //distortion->distort(buffer);
