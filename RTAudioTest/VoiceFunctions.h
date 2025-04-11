@@ -78,7 +78,7 @@ public:
 
 	//OSCILLATOR PARAMETERS
 	std::atomic<bool> oscOn = true; //Controlled via checkbox in the GUI. Controls whether the oscillator is on or of.
-	std::atomic<int> oscType = 1;//This should be changeable via dropdown menu, range 0 to 4
+	std::atomic<int> oscType = 2;//This should be changeable via dropdown menu, range 0 to 4
 	std::atomic<double> oscAmp = 0.01;//This should be changeable via knob/slider, range 0 to 0.1. Scaled logarithmically.
 	std::atomic<double> oscPhaseOffset = 0.0; //This should be changeable via knob, range -1 to 1. Linear scale.
 	std::atomic<double> oscPitchShift = -0.05; //Changeable, from -1 to 1 via knob. Linear scale.
@@ -204,7 +204,7 @@ public:
 	}
 
 	std::atomic<bool> osc2On = true; //Controlled via checkbox in the GUI. Turns the oscillator on or off.
-	std::atomic<int> osc2Type = 1;//This should be changeable via dropdown menu, range 0 to 4
+	std::atomic<int> osc2Type = 2;//This should be changeable via dropdown menu, range 0 to 4
 	std::atomic<double> osc2Amp = 0.01;//This should be changeable via knob/slider, range 0 to 0.1. Scaled logarithmically.
 	std::atomic<double> osc2PhaseOffset = 0.3; //This should be changeable via knob, range -1 to 1. Scaled linearly
 	std::atomic<double> osc2PitchShift = .1; //Changeable, from -1 to 1 via knob. Scaled linearly.
@@ -386,11 +386,10 @@ public:
 	}
 
 	//FILTER PARAMETERS
-	//std::atomic<bool> filtOn = false; //Controlled via checkbox in the GUI. Controls whether the filter is activated.
-	std::atomic<double> cutoffSet = 220.0; //this should be changeable via knob (range from 80 to 18,000, default 220. Scaled exponentially)
+	std::atomic<bool> filtOn = false; //Controlled via checkbox in the GUI. Controls whether the filter is activated.
+	std::atomic<double> cutoffSet = 880; //this should be changeable via knob (range from 80 to 18,000, default 220. Scaled exponentially)
 	std::atomic<double> q = 1; //This should be changeable via knob. (range from 0.01 to 10). Logarithmic scale
 	std::atomic<double> filterType = 1; //This should be changeable via knob. (range from -1 to 1), linear scale.
-	//std::atomic<int> filterOrder = 1; //This should be changeable via dropdown menu (range from 1 to 4). It doesn't do anything yet
 	std::atomic<bool> keyTrack = true; //This should be changeable via checkbox in the GUI.
 	double cutoff = cutoffSet;
 	double biqCoefs[5] = { 0,0,0,0,0 };//Not changeable
@@ -452,17 +451,18 @@ public:
 	}
 
 	void biquadFilter() { //This is a standard biquad filter. 
-		
-		for (int i = 0; i < bufferSize; i++) {
-			for (int j = 0; j < channelCount; j++) {
-				filterInReg[j][2] = filterInReg[j][1];
-				filterInReg[j][1] = filterInReg[j][0];
-				filterInReg[j][0] = localBuff[i * channelCount + j];//Setting the input registers
+		if (filtOn) {
+			for (int i = 0; i < bufferSize; i++) {
+				for (int j = 0; j < channelCount; j++) {
+					filterInReg[j][2] = filterInReg[j][1];
+					filterInReg[j][1] = filterInReg[j][0];
+					filterInReg[j][0] = localBuff[i * channelCount + j];//Setting the input registers
 
-				localBuff[i * channelCount + j] = filterInReg[j][0] * biqCoefs[0] + filterInReg[j][1] * biqCoefs[1] + filterInReg[j][2] * biqCoefs[2] - filterOutReg[j][0] * biqCoefs[3] - filterOutReg[j][1] * biqCoefs[4]; //Biquad filter equation
+					localBuff[i * channelCount + j] = filterInReg[j][0] * biqCoefs[0] + filterInReg[j][1] * biqCoefs[1] + filterInReg[j][2] * biqCoefs[2] - filterOutReg[j][0] * biqCoefs[3] - filterOutReg[j][1] * biqCoefs[4]; //Biquad filter equation
 
-				filterOutReg[j][1] = filterOutReg[j][0];
-				filterOutReg[j][0] = localBuff[i * channelCount + j]; //setting the output registers
+					filterOutReg[j][1] = filterOutReg[j][0];
+					filterOutReg[j][0] = localBuff[i * channelCount + j]; //setting the output registers
+				}
 			}
 		}
 		

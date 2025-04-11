@@ -149,6 +149,7 @@
     <ClInclude Include="Goodverb.h" />
     <ClInclude Include="GUI.h" />
     <ClInclude Include="GUI2.h" />
+    <ClInclude Include="GUIClasses.h" />
     <ClInclude Include="KeyInputManager.h" />
     <ClInclude Include="Modulators.h" />
     <ClInclude Include="RtAudio.h" />

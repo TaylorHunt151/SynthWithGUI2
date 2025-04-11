@@ -2,7 +2,7 @@
 
 
 
-void quanGUI() {
+void quanGUI(wxWindow* window, wxPanel* panel) {
 
 
 
