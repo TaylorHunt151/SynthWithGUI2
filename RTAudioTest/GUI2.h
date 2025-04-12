@@ -1,56 +1,13 @@
 #pragma once
 #include "GUIClasses.h"
 
-//wxFrame* window = new wxFrame(NULL, wxID_ANY, "Synthesizer", wxDefaultPosition, wxSize(800, 600));
-//wxPanel* panel = new wxPanel(window);
-//
-//// -------------------------------------------------
-//// Main Vertical Sizer for the entire panel.
-//// -------------------------------------------------
-//wxBoxSizer* voiceSizer = new wxBoxSizer(wxVERTICAL);
-//
-//// -------------------------------------------------
-//// TOP ROW: EG Box in Upper Right Corner (2x2 grid).
-//// -------------------------------------------------
-//wxBoxSizer* topSizer = new wxBoxSizer(wxHORIZONTAL);
-//topSizer->AddStretchSpacer(1); // Push EG box to the right.
-//
-//wxStaticBox* egBox = new wxStaticBox(panel, wxID_ANY, "Envelope Generator");
-//wxGridSizer* egGrid = new wxGridSizer(2, 2, 10, 10); // 2 rows, 2 columns, 10px gap.
-//
-//KnobControl* attackKnob = new KnobControl(panel, wxID_ANY, 1, 20);
-//attackKnob->SetValue(1);
-//KnobControl* decayKnob = new KnobControl(panel, wxID_ANY, 1, 20);
-//decayKnob->SetValue(1);
-//KnobControl* sustainKnob = new KnobControl(panel, wxID_ANY, 0, 1);
-//sustainKnob->SetValue(0);
-//KnobControl* releaseKnob = new KnobControl(panel, wxID_ANY, 1, 20);
-//releaseKnob->SetValue(1);
-//
-//// Add knobs to the grid in order: Attack, Decay; Sustain, Release.
-//egGrid->Add(attackKnob, 0, wxEXPAND);
-//egGrid->Add(decayKnob, 0, wxEXPAND);
-//egGrid->Add(sustainKnob, 0, wxEXPAND);
-//egGrid->Add(releaseKnob, 0, wxEXPAND);
-//
-//wxStaticBoxSizer* egBoxSizer = new wxStaticBoxSizer(egBox, wxVERTICAL);
-//egBoxSizer->Add(egGrid, 0, wxALL, 10);
-//topSizer->Add(egBoxSizer, 0, wxALL, 10);
-//voiceSizer->Add(topSizer, 0, wxEXPAND);
 
-//void MyFrame::OnSize(wxSizeEvent& event) {
-//	panel->Refresh();
-//	event.Skip();
-//}
 
 void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 
-	//wxImage::AddHandler(new wxPNGHandler());
 	//wxImage gayfurrieskissing("C:\\Users\\taylo\\OneDrive\\Desktop\\gayfurrieskissing.png", wxBITMAP_TYPE_PNG); //society isn't ready for this feature
+
 	//wxBitmap bitmap(gayfurrieskissing);
-
-
-	//panel->Bind(wxEVT_PAINT, &MyFrame::OnPaint, this);
 
 
 	wxBoxSizer* voiceSizer = new wxBoxSizer(wxHORIZONTAL);
