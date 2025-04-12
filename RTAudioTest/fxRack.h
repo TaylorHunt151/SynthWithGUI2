@@ -48,7 +48,7 @@ public:
 	std::atomic<double> drive = .1;//Controls the distortion's harshness. Range from 0 to 1, controlled via knob, logarithmic scale.
 	std::atomic<int> distType = 0; //Changeable via dropdown menu, range 0 to 5, controls distortion type.
 	std::atomic<double> distMix = 0.25; //Changeable via knob, range 0 to 1, controls the amount of distortion. Linear scale.
-    std::atomic<double> feedback = 0.9; //Controls delay feedback amount. Controlled via knob/slider in GUI. Range from 0 to 1.5. Linear scale.
+    std::atomic<double> feedback = 0.5; //Controls delay feedback amount. Controlled via knob/slider in GUI. Range from 0 to 1.5. Linear scale.
 
     std::vector<double> tap; //Vector that stores the delayed signal.
     int writeIndex = 0; //Index for writing to the delay buffer.

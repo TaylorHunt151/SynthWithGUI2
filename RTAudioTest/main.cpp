@@ -55,6 +55,13 @@ Goodverb* goodverb = new Goodverb();
 float filtCutoff = 220;
 float oscVol = 0.1;
 
+
+
+
+
+//Creating more global variables for the key tracking purposes
+
+
 //This loop is called by the audio device once per buffer. It generates audio data in batches and writes it to the buffer.
 int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
     double streamTime, RtAudioStreamStatus status, void* userData)
@@ -73,6 +80,8 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
     for (int i = 0; i < 2; i++) {
         LFOs[i].lfoGen();
     }
+
+    keyInputManager->keyScan();
 
     for (int i = 0; i < voiceCount; i++) {
 
@@ -181,9 +190,10 @@ public:
 
     bool OnInit() {
         // Create the main window and panel.
-        wxFrame* window = new wxFrame(NULL, wxID_ANY, "Synthesizer", wxDefaultPosition, wxSize(800, 600));
+        wxFrame* window = new wxFrame(NULL, wxID_ANY, "Synthesizer", wxDefaultPosition, wxSize(800, 600), wxDEFAULT_FRAME_STYLE | wxWANTS_CHARS);
         wxPanel* panel = new wxPanel(window);
-
+        panel->SetCanFocus(false);//Makes it so the panel can't steal focus from the window
+        window->SetCanFocus(true);
         // -------------------------------------------------
         // Main Vertical Sizer for the entire panel.
         // -------------------------------------------------
@@ -194,30 +204,6 @@ public:
         // -------------------------------------------------
         wxBoxSizer* topSizer = new wxBoxSizer(wxHORIZONTAL);
         topSizer->AddStretchSpacer(1); // Push EG box to the right.
-
-        //wxStaticBox* egBox = new wxStaticBox(panel, wxID_ANY, "Envelope Generator");
-        //wxGridSizer* egGrid = new wxGridSizer(2, 2, 10, 10); // 2 rows, 2 columns, 10px gap.
-
-        //KnobControl* attackKnob = new KnobControl(panel, wxID_ANY, 1, 20);
-        //attackKnob->SetValue(1);
-        //KnobControl* decayKnob = new KnobControl(panel, wxID_ANY, 1, 20);
-        //decayKnob->SetValue(1);
-        //KnobControl* sustainKnob = new KnobControl(panel, wxID_ANY, 0, 1);
-        //sustainKnob->SetValue(0);
-        //KnobControl* releaseKnob = new KnobControl(panel, wxID_ANY, 1, 20);
-        //releaseKnob->SetValue(1);
-
-        //// Add knobs to the grid in order: Attack, Decay; Sustain, Release.
-        //egGrid->Add(attackKnob, 0, wxEXPAND);
-        //egGrid->Add(decayKnob, 0, wxEXPAND);
-        //egGrid->Add(sustainKnob, 0, wxEXPAND);
-        //egGrid->Add(releaseKnob, 0, wxEXPAND);
-
-        //wxStaticBoxSizer* egBoxSizer = new wxStaticBoxSizer(egBox, wxVERTICAL);
-        //egBoxSizer->Add(egGrid, 0, wxALL, 10);
-        //topSizer->Add(egBoxSizer, 0, wxALL, 10);
-        //mainSizer->Add(topSizer, 0, wxEXPAND);
-
 
         /***************************************************
         * GUI Functions are called below
@@ -251,26 +237,28 @@ public:
         // -------------------------------------------------
         // Key Event Bindings: Update our KeyInputManager and refresh the PianoKeyboard.
         // -------------------------------------------------
-        window->Bind(wxEVT_KEY_DOWN, [=](wxKeyEvent& event) {
-            char key = static_cast<char>(event.GetUnicodeKey());
-            key = toupper(key);
-            if (key >= 'A' && key <= 'P') {
-                // Refresh immediately so the key color updates.
-                pianoKeyboard->Refresh();
-            }
-            keyInputManager->OnKeyDown(event);
-            event.Skip();
-            });
+        //window->Bind(wxEVT_KEY_DOWN, [=](wxKeyEvent& event) {//Key down event
+        //    char key = static_cast<char>(event.GetUnicodeKey());
+        //    key = toupper(key);
+        //    if (key >= 'A' && key <= 'P') {
+        //        // Refresh immediately so the key color updates.
+        //        pianoKeyboard->Refresh();
+        //    }
+        //    keyInputManager->OnKeyDown(event);
+        //    event.Skip();
+        //    });
 
-        window->Bind(wxEVT_KEY_UP, [=](wxKeyEvent& event) {
-            char key = static_cast<char>(event.GetUnicodeKey());
-            key = toupper(key);
-            if (key >= 'A' && key <= 'P') {
-                pianoKeyboard->Refresh();
-            }
-            keyInputManager->OnKeyUp(event);
-            event.Skip();
-            });
+        //window->Bind(wxEVT_KEY_UP, [=](wxKeyEvent& event) {//Key up event
+        //    char key = static_cast<char>(event.GetUnicodeKey());
+        //    key = toupper(key);
+        //    if (key >= 'A' && key <= 'P') {
+        //        pianoKeyboard->Refresh();
+        //    }
+        //    keyInputManager->OnKeyUp(event);
+        //    event.Skip();
+        //    });
+
+
 
         // -------------------------------------------------
         // Timer: Update the Debugging Box with EG values and Keyboard States.
@@ -290,7 +278,8 @@ public:
             //debugText << "Release: " << releaseVal << "\n\n";
             //debugText << "Keyboard States:\n";
 
-            // Assume noteSet has at least 16 entries for keys A-P.
+            //Note: noteSet has (usually) 16 entries, one for each voice object. The voice objects are designed to be set to any note, and the input logic in keyinputmanager is designed to dynamically set the frequency of each voice to match the notes being held down.
+            //The reason why I don't have one voice for each note is because it would take a ton of CPU power for that. This method of allocating voices is standard for pretty much all digital synths.
             size_t numKeys = keyInputManager->noteSet.size();
             for (size_t i = 0; i < numKeys && i < 16; i++) {
                 char keyLabel = 'A' + i;

@@ -5,7 +5,6 @@
 
 void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 
-	//wxImage gayfurrieskissing("C:\\Users\\taylo\\OneDrive\\Desktop\\gayfurrieskissing.png", wxBITMAP_TYPE_PNG); //society isn't ready for this feature
 
 
 	wxBoxSizer* voiceSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -17,11 +16,7 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 	wxBoxSizer* oscBoxSizer = new wxBoxSizer(wxHORIZONTAL); //Box for oscillator knobs
 
 	wxStaticBox* oscBox = new wxStaticBox(panel, wxID_ANY, "Oscillator 1");
-	wxGridSizer* oscGrid = new wxGridSizer(2, 3, 5, 5);
-
-	//wxCheckBox* checkbox = new wxCheckBox(parent, id, label, pos, size, style);
-	wxCheckBox* oscOnButton = new wxCheckBox(panel, wxID_ANY, "On");
-	oscOnButton->SetValue(0);//Add a checkbox to turn oscillator 1 on or off
+	wxGridSizer* oscGrid = new wxGridSizer(2, 2, 5, 5);
 
 	wxArrayString oscTypeStr;
 	oscTypeStr.Add("Sine");
@@ -29,9 +24,11 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 	oscTypeStr.Add("Saw");
 	oscTypeStr.Add("Triangle");
 	oscTypeStr.Add("Noise");//Adds the options for oscillator types to a string that will be used by the wxChoice object to determine its choices
+	oscTypeStr.Add("Off");
 
 	wxChoice* oscTypeMenu = new wxChoice(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, oscTypeStr);
-	oscTypeMenu->SetSelection(2);
+	oscTypeMenu->SetSelection(5);
+
 
 	KnobControl* oscVolKnob = new KnobControl(panel, wxID_ANY, 0, 100);
 	oscVolKnob->SetValue(80);
@@ -42,7 +39,6 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 	KnobControl* oscPitchKnob = new KnobControl(panel, wxID_ANY, -100, 100);
 	oscPitchKnob->SetValue(0);
 	
-	oscGrid->Add(oscOnButton, 0, wxEXPAND);
 	oscGrid->Add(oscTypeMenu, 0);
 	oscGrid->Add(oscVolKnob, 0, wxEXPAND);
 	oscGrid->Add(oscPhsKnob, 0, wxEXPAND);
@@ -64,20 +60,11 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 	wxBoxSizer* osc2BoxSizer = new wxBoxSizer(wxHORIZONTAL); //Box for oscillator 2 knobs
 
 	wxStaticBox* osc2Box = new wxStaticBox(panel, wxID_ANY, "Oscillator 2");
-	wxGridSizer* osc2Grid = new wxGridSizer(2, 3, 5, 5);
+	wxGridSizer* osc2Grid = new wxGridSizer(2, 2, 5, 5);
 
-	wxCheckBox* osc2OnButton = new wxCheckBox(panel, wxID_ANY, "On");
-	osc2OnButton->SetValue(0);//Add a checkbox to turn oscillator 2 on or off
 
-	wxArrayString osc2TypeStr;
-	osc2TypeStr.Add("Sine");
-	osc2TypeStr.Add("Square");
-	osc2TypeStr.Add("Saw");
-	osc2TypeStr.Add("Triangle");
-	osc2TypeStr.Add("Noise");//Adds the options for oscillator types to a string that will be used by the wxChoice object to determine its choices
-
-	wxChoice* osc2TypeMenu = new wxChoice(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, osc2TypeStr);
-	osc2TypeMenu->SetSelection(2);//Sets default value to "Saw"
+	wxChoice* osc2TypeMenu = new wxChoice(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, oscTypeStr);
+	osc2TypeMenu->SetSelection(5);//Sets default value to "Saw"
 
 
 	KnobControl* osc2VolKnob = new KnobControl(panel, wxID_ANY, 0, 100);
@@ -89,7 +76,6 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 	KnobControl* osc2PitchKnob = new KnobControl(panel, wxID_ANY, -100, 100);
 	osc2PitchKnob->SetValue(0);
 	
-	osc2Grid->Add(osc2OnButton, 0, wxEXPAND);
 	osc2Grid->Add(osc2TypeMenu, 0);
 	osc2Grid->Add(osc2VolKnob, 0, wxEXPAND);
 	osc2Grid->Add(osc2PhsKnob, 0, wxEXPAND);
@@ -181,6 +167,8 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 	wxBoxSizer* flngBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxStaticBox* flngBox = new wxStaticBox(panel, wxID_ANY, "Flanger");
 	wxGridSizer* flngGrid = new wxGridSizer(2, 5, 5, 5);
+
+
 
 	wxCheckBox* flngOn = new wxCheckBox(panel, wxID_ANY, "On");
 	flngOn->SetValue(0);
@@ -294,9 +282,10 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 	dlyDistTypeStr.Add("4");
 	dlyDistTypeStr.Add("5");
 	dlyDistTypeStr.Add("6");
+	dlyDistTypeStr.Add("Distort Off");
 
 	wxChoice* dlyDistTypeMenu = new wxChoice(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, dlyDistTypeStr);
-	dlyDistTypeMenu->SetSelection(1);
+	dlyDistTypeMenu->SetSelection(6);
 
 	delayGrid->Add(delayOnCheck, 0, wxEXPAND);
 	delayGrid->Add(delayTimeKnob, 0, wxEXPAND);
@@ -368,12 +357,12 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 
 	wxBoxSizer* distBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxStaticBox* distBox = new wxStaticBox(panel, wxID_ANY, "Distortion");
-	wxGridSizer* distGrid = new wxGridSizer(3, 3, 5, 5);
+	wxGridSizer* distGrid = new wxGridSizer(3, 2, 5, 5);
 
-	wxCheckBox* distOnCheck = new wxCheckBox(panel, wxID_ANY, "On");
-	distOnCheck->SetValue(0);
+	//wxCheckBox* distOnCheck = new wxCheckBox(panel, wxID_ANY, "On");
+	//distOnCheck->SetValue(0);
 	wxChoice* distType = new wxChoice(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, dlyDistTypeStr);
-	distType->SetSelection(2);
+	distType->SetSelection(6);
 	KnobControl* distWet = new KnobControl(panel, wxID_ANY, 0, 100);
 	distWet->SetValue(50);
 	KnobControl* distDrive = new KnobControl(panel, wxID_ANY, 0, 100);
@@ -386,7 +375,7 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 	distFiltType->SetValue(0);
 	
 
-	distGrid->Add(distOnCheck, 0, wxEXPAND);
+	//distGrid->Add(distOnCheck, 0, wxEXPAND);
 	distGrid->Add(distType, 0);
 	distGrid->Add(distWet, 0, wxEXPAND);
 	distGrid->Add(distDrive, 0, wxEXPAND);

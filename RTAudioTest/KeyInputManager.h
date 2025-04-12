@@ -13,13 +13,14 @@
 #include <algorithm>
 #include "VoiceFunctions.h"
 #include <unordered_map>
+#include <Windows.h>
 
 
 extern int voiceCount;
 
-extern std::vector<char> notesHeld;
 extern int oscAmpGoal;
 extern std::vector<char> noteSet;
+
 extern double oscFreq;
 extern voice* voices;
 int voiceIndex = 0;
@@ -31,10 +32,10 @@ extern int voiceCount;
 class KeyInputManager : public wxEvtHandler {
 public:
 
-	//bool noteHeld[64]; //An array that says whether each note is currently being held down
+	bool noteHeld[64]; //An array that says whether each note is currently being held down
 	std::vector<char> noteSet; //A vector containing all notes currently being held in order of when they were pressed. When a note is released, it should be replaced with ' '. 
+    int noteIndex; //Keeps track of which voice is to be assigned or unassigned
 	int voiceIncrement = 0; //keeps track of which voice is being edited.
-    std::unordered_map<char, int> keyToVoiceMap; //Map to track which key is assigned to which voice
 
 	char currentKey; //stores the key that was just pressed.
 
@@ -47,34 +48,62 @@ public:
 		}
 	} //Initialize noteSet with voiceCount
 
-    void OnKeyDown(wxKeyEvent& event) {
-        currentKey = event.GetUnicodeKey();
-        char keyChar = toupper(currentKey);
-        if (keyChar >= 'A' && keyChar <= 'P') {
-            int index = keyChar - 'A';
-            // Only set if not already pressed.
-            if (noteSet[index] == ' ') {
-                noteSet[index] = keyChar;
+    void keyScan() {//Scans all keys for inputs. This is necessary because the default wxEVT_KEY_DOWN and wxEVT_KEY_UP events were causing weird glitches, so I implemented my own key press detection.
 
-                voices[index].adsrState = 0;
-                voices[index].oscAmpGoal = 1;
-                noteSetter(index);
+        for (int keyCode = '0'; keyCode <= 'Z'; keyCode++) {
+            int keyMin = '0';
+            bool keyHeld = GetAsyncKeyState(keyCode);
+            bool keyAlreadyDown = noteHeld[keyCode - keyMin];
+            noteHeld[keyCode - keyMin] = keyHeld;
+
+            if (keyHeld && !keyAlreadyDown) {
+                //wxLogMessage("AHHHH");
+                OnKeyDown(keyCode);
             }
+            else if (!keyHeld && keyAlreadyDown) {
+                OnKeyUp(keyCode);
+            }
+
         }
-        event.Skip();
     }
 
-    void OnKeyUp(wxKeyEvent& event) {
-        currentKey = event.GetUnicodeKey();
+    void OnKeyDown(int currentKey) {
         char keyChar = toupper(currentKey);
-        if (keyChar >= 'A' && keyChar <= 'P') {
-            int index = keyChar - 'A';
-            noteSet[index] = ' ';
-            voices[index].oscAmpGoal = 0;
-            voices[index].adsrState = 3;
-            noteSetter(index);
+        bool keyPressed = false;
+        if (keyChar >= '0' && keyChar <= 'Z') {
+            int index = keyChar - '0';
+            // Only set if not already pressed.
+            for (int i = 0; i < voiceCount; i++) {//Check if the key is pressed
+                if (noteSet[i] == keyChar) {
+                    keyPressed = true;
+                }
+            }
+            if (!keyPressed) {//If the note is not already being held down, assign it to a voice and start the envelope
+                noteSet[noteIndex] = keyChar;
+                voices[noteIndex].adsrState = 0;
+                voices[noteIndex].oscAmpGoal = 1;
+                noteSetter(noteIndex);
+                noteIndex++;
+                if (noteIndex > 15) {
+                    noteIndex = 0;
+                }
+            }
         }
-        event.Skip();
+
+    }
+
+    void OnKeyUp(int currentKey) {//for when the user releases a note
+        char keyChar = toupper(currentKey);
+        if (keyChar >= '0' && keyChar <= 'Z') {
+            for (int i = 0; i < voiceCount; i++) {
+                if (noteSet[i] == keyChar) {
+                    noteSet[i] = ' ';
+                    voices[i].oscAmpGoal = 0;
+                    voices[i].adsrState = 3;
+                    noteSetter(i);
+                }
+            }
+        }
 
     }
 

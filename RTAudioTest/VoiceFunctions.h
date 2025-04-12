@@ -330,7 +330,7 @@ public:
 	//ENVELOPE PARAMETERS
 	std::atomic<double> attack = .1;//This should be changeable via slider (range from 0.01 to 20). Exponential scale.
 	std::atomic<double> decay = .1;//This should be changeable via slider (range from 0.01 to 20). Exponential scale.
-	std::atomic<double> sustain = 0.5;//This should be changeable via slider (range from 0 to 1). Exponential scale.
+	std::atomic<double> sustain = 0;//This should be changeable via slider (range from 0 to 1). Exponential scale.
 	std::atomic<double> release = .1;//This should be changeable via slider (range from 0.01 to 20). Exponential scale.
 
 	int oscAmpGoal = 0;//not changeable
