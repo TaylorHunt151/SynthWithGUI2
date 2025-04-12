@@ -217,7 +217,7 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 	flngBoxSizer->Add(flngStatSizer, 0, wxALL, 10);
 	voiceSizer->Add(flngBoxSizer, 0, wxALL, 10);
 
-
+	
 	/********************************************************************
 	* CHORUS GUI
 	*********************************************************************/
