@@ -50,5 +50,8 @@
     <ClInclude Include="GUIClasses.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GUI3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

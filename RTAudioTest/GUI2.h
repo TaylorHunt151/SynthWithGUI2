@@ -7,8 +7,6 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 
 	//wxImage gayfurrieskissing("C:\\Users\\taylo\\OneDrive\\Desktop\\gayfurrieskissing.png", wxBITMAP_TYPE_PNG); //society isn't ready for this feature
 
-	//wxBitmap bitmap(gayfurrieskissing);
-
 
 	wxBoxSizer* voiceSizer = new wxBoxSizer(wxHORIZONTAL);
 
