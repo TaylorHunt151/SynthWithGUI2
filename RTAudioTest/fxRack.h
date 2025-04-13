@@ -203,7 +203,7 @@ public:
 
 class Flanger {
 public:
-    std::atomic<bool> on = false; //Turns delay on or off. Controlled via checkbox in GUI.
+    std::atomic<bool> on = true; //Turns delay on or off. Controlled via checkbox in GUI.
     std::atomic<double> delayTime = .003; //Delay time in seconds. Controlled via knob in GUI. Should range from 0.0005 to .005. Linear scale.
     std::atomic<double> wetMix = 0.5; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale.
     std::atomic<double> feedback = 0.99; //Controls delay feedback amount. Controlled via knob/slider in GUI. Range from 0 to 1.5. Linear scale.
@@ -500,9 +500,9 @@ public:
 			for (int i = 0; i < (bufferSize * channelCount); i++) {
 				//tempBuffer[i] *= drive;
 				distAlgorithms(i);
-				if (drive > 1) {
-					tempBuffer[i] /= drive * drive;
-				}
+				//if (drive > 1) {
+				//	tempBuffer[i] /= drive * drive;
+				//}
 				buffer[i] = tempBuffer[i] * wetMix + buffer[i] * (1 - wetMix);
 			}
 
@@ -667,7 +667,6 @@ public:
 					}
 
 					double delayedSample = tap[readIndex + j]; //Get the delayed sample.
-					//distort(delayedSample);
 
 					buffer[i * channelCount + j] = buffer[i * channelCount + j] * (1.0 - wetMix) + delayedSample * wetMix;				//Mix the delayed sample with the current sample.
 

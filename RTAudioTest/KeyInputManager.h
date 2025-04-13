@@ -84,7 +84,7 @@ public:
                 voices[noteIndex].oscAmpGoal = 1;
                 noteSetter(noteIndex);
                 noteIndex++;
-                if (noteIndex > 15) {
+                if (noteIndex >= voiceCount) {
                     noteIndex = 0;
                 }
             }

@@ -7,7 +7,7 @@ void voice::setVars(GUIControls* guiControls) { //This sets the parameters of al
 
 	//OSC1
 	oscType = guiControls->oscTypeMenu->GetSelection();
-	oscAmp = guiControls->oscVolKnob->GetValue() * 0.01;
+	oscAmp = guiControls->oscVolKnob->GetValue();
 	oscPhaseOffset = guiControls->oscPhsKnob->GetValue();
 	oscPitchShift = guiControls->oscPitchKnob->GetValue();
 

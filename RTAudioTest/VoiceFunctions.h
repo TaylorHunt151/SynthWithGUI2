@@ -333,7 +333,7 @@ public:
 	//ENVELOPE PARAMETERS
 	std::atomic<double> attack = .1;//This should be changeable via slider (range from 0.01 to 20). Exponential scale.
 	std::atomic<double> decay = .1;//This should be changeable via slider (range from 0.01 to 20). Exponential scale.
-	std::atomic<double> sustain = 0;//This should be changeable via slider (range from 0 to 1). Exponential scale.
+	std::atomic<double> sustain = 1;//This should be changeable via slider (range from 0 to 1). Exponential scale.
 	std::atomic<double> release = .1;//This should be changeable via slider (range from 0.01 to 20). Exponential scale.
 
 	int oscAmpGoal = 0;//not changeable
@@ -393,7 +393,7 @@ public:
 	std::atomic<double> cutoffSet = 880; //this should be changeable via knob (range from 80 to 18,000, default 220. Scaled exponentially)
 	std::atomic<double> q = 1; //This should be changeable via knob. (range from 0.01 to 10). Logarithmic scale
 	std::atomic<double> filterType = 1; //This should be changeable via knob. (range from -1 to 1), linear scale.
-	std::atomic<bool> keyTrack = false; //This should be changeable via checkbox in the GUI.
+	std::atomic<bool> keyTrack = true; //This should be changeable via checkbox in the GUI.
 	double cutoff = cutoffSet;
 	double biqCoefs[5] = { 0,0,0,0,0 };//Not changeable
 

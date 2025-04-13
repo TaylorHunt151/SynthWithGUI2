@@ -35,10 +35,10 @@
 //GENERAL SYNTH PARAMETERS
 //These parameters require reinitialization of the audio device to be changed.
 std::atomic<int> sampRate = 44100;//DON'T ADD A UI ELEMENT FOR THIS YET
-std::atomic<int> bufferSize = 32;//DON'T ADD A UI ELEMENT FOR THIS YET
+std::atomic<int> bufferSize = 128;//DON'T ADD A UI ELEMENT FOR THIS YET
 std::atomic<bool> reInit = false; //This should trigger the audioStart() method and reinitialize the device. DON'T ADD A UI ELEMENT FOR THIS YET
 
-int voiceCount = 16;//This should be changeable via dropdown menu (NOT YET IMPLEMENTED)
+int voiceCount = 4;//This should be changeable via dropdown menu (NOT YET IMPLEMENTED)
 int channelCount = 2;//Not changeable.
 
 
@@ -286,7 +286,7 @@ public:
             //Note: noteSet has (usually) 16 entries, one for each voice object. The voice objects are designed to be set to any note, and the input logic in keyinputmanager is designed to dynamically set the frequency of each voice to match the notes being held down.
             //The reason why I don't have one voice for each note is because it would take a ton of CPU power for that. This method of allocating voices is standard for pretty much all digital synths.
             size_t numKeys = keyInputManager->noteSet.size();
-            for (size_t i = 0; i < numKeys && i < 16; i++) {
+            for (size_t i = 0; i < numKeys && i < voiceCount; i++) {
                 char keyLabel = 'A' + i;
                 char noteValue = keyInputManager->noteSet[i];
                 wxString state;

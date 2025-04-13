@@ -37,16 +37,16 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handl
 		});
 
 
-	KnobControl* oscVolKnob = new KnobControl(panel, wxID_ANY, 0, 1);//...And so on for each variable
+	KnobControl* oscVolKnob = new KnobControl(panel, wxID_ANY, 0, 0.1, ScaleType::Linear, "Volume");//...And so on for each variable
 	oscVolKnob->SetValue(80);
 	guiControls.oscVolKnob = oscVolKnob;
 	
-	KnobControl* oscPhsKnob = new KnobControl(panel, wxID_ANY, 0, 1);
+	KnobControl* oscPhsKnob = new KnobControl(panel, wxID_ANY, 0, 1, ScaleType::Linear, "Phase");
 	oscPhsKnob->SetValue(0);
 	guiControls.oscPhsKnob = oscPhsKnob;
 
 
-	KnobControl* oscPitchKnob = new KnobControl(panel, wxID_ANY, -100, 100);
+	KnobControl* oscPitchKnob = new KnobControl(panel, wxID_ANY, -1, 1, ScaleType::Linear, "PitchShift");
 	oscPitchKnob->SetValue(0);
 	guiControls.oscPitchKnob = oscPitchKnob;
 
@@ -83,16 +83,16 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handl
 		window->SetFocus();
 		});
 
-	KnobControl* osc2VolKnob = new KnobControl(panel, wxID_ANY, 0, 1);
+	KnobControl* osc2VolKnob = new KnobControl(panel, wxID_ANY, 0, 0.1, ScaleType::Linear, "Volume");
 	osc2VolKnob->SetValue(80);
 	guiControls.osc2VolKnob = osc2VolKnob;
 
-	KnobControl* osc2PhsKnob = new KnobControl(panel, wxID_ANY, 0, 1);
+	KnobControl* osc2PhsKnob = new KnobControl(panel, wxID_ANY, 0, 1, ScaleType::Linear, "Phase");
 	osc2PhsKnob->SetValue(0);
 	guiControls.osc2PhsKnob = osc2PhsKnob;
 
 	
-	KnobControl* osc2PitchKnob = new KnobControl(panel, wxID_ANY, -100, 100);
+	KnobControl* osc2PitchKnob = new KnobControl(panel, wxID_ANY, -1, 1, ScaleType::Linear, "PitchShift");
 	osc2PitchKnob->SetValue(0);
 	guiControls.osc2PitchKnob = osc2PitchKnob;
 
@@ -119,19 +119,19 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handl
 	wxStaticBox* envBox = new wxStaticBox(panel, wxID_ANY, "Envelope/ADSR");
 	wxGridSizer* envGrid = new wxGridSizer(2, 2, 5, 5);
 
-	KnobControl* envAtk = new KnobControl(panel, wxID_ANY, 0, 20);
+	KnobControl* envAtk = new KnobControl(panel, wxID_ANY, 0.01, 20, ScaleType::Linear, "Attack");
 	envAtk->SetValue(1);
 	guiControls.envAtk = envAtk;
 
-	KnobControl* envDec = new KnobControl(panel, wxID_ANY, 0, 20);
+	KnobControl* envDec = new KnobControl(panel, wxID_ANY, 0.01, 20, ScaleType::Linear, "Decay");
 	envDec->SetValue(1);
 	guiControls.envDec = envDec;
 
-	KnobControl* envSus = new KnobControl(panel, wxID_ANY, 0, 20);
+	KnobControl* envSus = new KnobControl(panel, wxID_ANY, 0, 1, ScaleType::Linear, "Sustain");
 	envSus->SetValue(1);
 	guiControls.envSus = envSus;
 
-	KnobControl* envRel = new KnobControl(panel, wxID_ANY, 0, 20);
+	KnobControl* envRel = new KnobControl(panel, wxID_ANY, 0.01, 20, ScaleType::Linear, "Release");
 	envRel->SetValue(1);
 	guiControls.envRel = envRel;
 
@@ -182,15 +182,15 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handl
 		window->SetFocus();
 		});
 
-	KnobControl* cutoffKnob = new KnobControl(panel, wxID_ANY, 80, 18000);
+	KnobControl* cutoffKnob = new KnobControl(panel, wxID_ANY, 80, 18000, ScaleType::Linear, "Cutoff");
 	cutoffKnob->SetValue(880);
 	guiControls.cutoffKnob = cutoffKnob;
 
-	KnobControl* filtQKnob = new KnobControl(panel, wxID_ANY, 0, 10);
+	KnobControl* filtQKnob = new KnobControl(panel, wxID_ANY, 0.1, 100, ScaleType::Linear, "Q");
 	filtQKnob->SetValue(1);
 	guiControls.filtQKnob = filtQKnob;
 
-	KnobControl* filtTypeKnob = new KnobControl(panel, wxID_ANY, -1, 1);
+	KnobControl* filtTypeKnob = new KnobControl(panel, wxID_ANY, -1, 1, ScaleType::Linear, "Type");
 	filtTypeKnob->SetValue(1);
 	guiControls.filtTypeKnob = filtTypeKnob;
 
@@ -233,35 +233,35 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handl
 		});
 	guiControls.flngOn = flngOn;
 
-	KnobControl* flngTime = new KnobControl(panel, wxID_ANY, 0, 3);
+	KnobControl* flngTime = new KnobControl(panel, wxID_ANY, .0005, .005, ScaleType::Linear, "Time");
 	flngTime->SetValue(1);
 	guiControls.flngTime = flngTime;
 
-	KnobControl* flngWet = new KnobControl(panel, wxID_ANY, 0, 100);
+	KnobControl* flngWet = new KnobControl(panel, wxID_ANY, 0, 1, ScaleType::Linear, "Mix");
 	flngWet->SetValue(50);
 	guiControls.flngWet = flngWet;
 
-	KnobControl* flngFdbck = new KnobControl(panel, wxID_ANY, 0, 100);
+	KnobControl* flngFdbck = new KnobControl(panel, wxID_ANY, 0, 0.999, ScaleType::Linear, "Feedback");
 	flngFdbck->SetValue(50);
 	guiControls.flngFdbck = flngFdbck;
 
-	KnobControl* flngModAmnt = new KnobControl(panel, wxID_ANY, 0, 3);
+	KnobControl* flngModAmnt = new KnobControl(panel, wxID_ANY, 0, 0.003, ScaleType::Linear, "Mod Depth");
 	flngModAmnt->SetValue(3);
 	guiControls.flngModAmnt = flngModAmnt;
 
-	KnobControl* flngModFreq = new KnobControl(panel, wxID_ANY, 0, 10);
+	KnobControl* flngModFreq = new KnobControl(panel, wxID_ANY, 0.01, 10, ScaleType::Linear, "Mod Freq");
 	flngModFreq->SetValue(1);
 	guiControls.flngModFreq = flngModFreq;
 
-	KnobControl* flngCutoff = new KnobControl(panel, wxID_ANY, 80, 20000);
+	KnobControl* flngCutoff = new KnobControl(panel, wxID_ANY, 80, 20000, ScaleType::Linear, "Cutoff");
 	flngCutoff->SetValue(440);
 	guiControls.flngCutoff = flngCutoff;
 
-	KnobControl* flngQ = new KnobControl(panel, wxID_ANY, 0, 10);
+	KnobControl* flngQ = new KnobControl(panel, wxID_ANY, 0.1, 10, ScaleType::Linear, "Q");
 	flngQ->SetValue(1);
 	guiControls.flngQ = flngQ;
 
-	KnobControl* flngFilterType = new KnobControl(panel, wxID_ANY, -1, 1);
+	KnobControl* flngFilterType = new KnobControl(panel, wxID_ANY, -1, 1, ScaleType::Linear, "Filter Type");
 	flngFilterType->SetValue(0);
 	guiControls.flngFilterType = flngFilterType;
 
@@ -299,35 +299,35 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handl
 		});
 	guiControls.chrsOn = chrsOn;
 
-	KnobControl* chrsTime = new KnobControl(panel, wxID_ANY, 0, 3);
+	KnobControl* chrsTime = new KnobControl(panel, wxID_ANY, 0.003, .05, ScaleType::Linear, "Time");
 	chrsTime->SetValue(1);
 	guiControls.chrsTime = chrsTime;
 
-	KnobControl* chrsWet = new KnobControl(panel, wxID_ANY, 0, 100);
+	KnobControl* chrsWet = new KnobControl(panel, wxID_ANY, 0, 1, ScaleType::Linear, "Mix");
 	chrsWet->SetValue(50);
 	guiControls.chrsWet = chrsWet;
 
-	KnobControl* chrsFdbck = new KnobControl(panel, wxID_ANY, 0, 100);
+	KnobControl* chrsFdbck = new KnobControl(panel, wxID_ANY, 0, 0.99, ScaleType::Linear, "Feedback");
 	chrsFdbck->SetValue(50);
 	guiControls.chrsFdbck = chrsFdbck;
 
-	KnobControl* chrsModAmnt = new KnobControl(panel, wxID_ANY, 0, 3);
+	KnobControl* chrsModAmnt = new KnobControl(panel, wxID_ANY, 0, 0.03, ScaleType::Linear, "Mod Depth");
 	chrsModAmnt->SetValue(3);
 	guiControls.chrsModAmnt = chrsModAmnt;
 
-	KnobControl* chrsModFreq = new KnobControl(panel, wxID_ANY, 0, 10);
+	KnobControl* chrsModFreq = new KnobControl(panel, wxID_ANY, 0.01, 10, ScaleType::Linear, "Mod Freq");
 	chrsModFreq->SetValue(1);
 	guiControls.chrsModFreq = chrsModFreq;
 
-	KnobControl* chrsCutoff = new KnobControl(panel, wxID_ANY, 80, 20000);
+	KnobControl* chrsCutoff = new KnobControl(panel, wxID_ANY, 80, 20000, ScaleType::Linear, "Cutoff");
 	chrsCutoff->SetValue(440);
 	guiControls.chrsCutoff = chrsCutoff;
 
-	KnobControl* chrsQ = new KnobControl(panel, wxID_ANY, 0, 10);
+	KnobControl* chrsQ = new KnobControl(panel, wxID_ANY, 0.1, 10, ScaleType::Linear, "Q");
 	chrsQ->SetValue(1);
 	guiControls.chrsQ = chrsQ;
 
-	KnobControl* chrsFilterType = new KnobControl(panel, wxID_ANY, -1, 1);
+	KnobControl* chrsFilterType = new KnobControl(panel, wxID_ANY, -1, 1, ScaleType::Linear, "Filter Type");
 	chrsFilterType->SetValue(0);
 	guiControls.chrsFilterType = chrsFilterType;
 
@@ -363,35 +363,35 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handl
 		});
 	guiControls.delayOnCheck = delayOnCheck;
 
-	KnobControl* delayTimeKnob = new KnobControl(panel, wxID_ANY, 0, 10);
+	KnobControl* delayTimeKnob = new KnobControl(panel, wxID_ANY, 0.1, 10, ScaleType::Linear, "Time");
 	delayTimeKnob->SetValue(1);
 	guiControls.delayTimeKnob = delayTimeKnob;
 
-	KnobControl* delayWetKnob = new KnobControl(panel, wxID_ANY, 0, 100);
+	KnobControl* delayWetKnob = new KnobControl(panel, wxID_ANY, 0, 1, ScaleType::Linear, "Mix");
 	delayWetKnob->SetValue(50);
 	guiControls.delayWetKnob = delayWetKnob;
 
-	KnobControl* delayFeedback = new KnobControl(panel, wxID_ANY, 0, 100);
+	KnobControl* delayFeedback = new KnobControl(panel, wxID_ANY, 0, 0.99, ScaleType::Linear, "Feedback");
 	delayFeedback->SetValue(50);
 	guiControls.delayFeedback = delayFeedback;
 
-	KnobControl* delayCutoff = new KnobControl(panel, wxID_ANY, 80, 18000);
+	KnobControl* delayCutoff = new KnobControl(panel, wxID_ANY, 80, 18000, ScaleType::Linear, "Cutoff");
 	delayCutoff->SetValue(440);
 	guiControls.delayCutoff = delayCutoff;
 
-	KnobControl* delayFiltQ = new KnobControl(panel, wxID_ANY, 0, 10);
+	KnobControl* delayFiltQ = new KnobControl(panel, wxID_ANY, 0.1, 10, ScaleType::Linear, "Q");
 	delayFiltQ->SetValue(1);
 	guiControls.delayQ = delayFiltQ;
 
-	KnobControl* delayFiltType = new KnobControl(panel, wxID_ANY, -1, 1);
+	KnobControl* delayFiltType = new KnobControl(panel, wxID_ANY, -1, 1, ScaleType::Linear, "Filter Type");
 	delayFiltType->SetValue(0);
 	guiControls.delayFiltType = delayFiltType;
 
-	KnobControl* delayDrive = new KnobControl(panel, wxID_ANY, 0, 100);
+	KnobControl* delayDrive = new KnobControl(panel, wxID_ANY, 0.1, 10, ScaleType::Linear, "Drive");
 	delayDrive->SetValue(10);
 	guiControls.delayDrive = delayDrive;
 
-	KnobControl* delayDistMix = new KnobControl(panel, wxID_ANY, 0, 100);	
+	KnobControl* delayDistMix = new KnobControl(panel, wxID_ANY, 0, 1, ScaleType::Linear, "Dist Mix");
 	delayDistMix->SetValue(25);
 	guiControls.delayDistMix = delayDistMix;
 
@@ -445,39 +445,39 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handl
 		});
 	guiControls.verbOnCheck = verbOnCheck;
 
-	KnobControl* verbDecay = new KnobControl(panel, wxID_ANY, 0, 1);
+	KnobControl* verbDecay = new KnobControl(panel, wxID_ANY, 0.001, 0.49, ScaleType::Linear, "Decay");
 	verbDecay->SetValue(1);
 	guiControls.verbDecay = verbDecay;
 
-	KnobControl* verbWet = new KnobControl(panel, wxID_ANY, 0, 100);
+	KnobControl* verbWet = new KnobControl(panel, wxID_ANY, 0, 1, ScaleType::Linear, "Mix");
 	verbWet->SetValue(25);
 	guiControls.verbWet = verbWet;
 
-	KnobControl* verbDamp = new KnobControl(panel, wxID_ANY, 80, 18000);
+	KnobControl* verbDamp = new KnobControl(panel, wxID_ANY, 80, 18000, ScaleType::Linear, "DampCut");
 	verbDamp->SetValue(1000);
 	guiControls.verbDamp = verbDamp;
 
-	KnobControl* verbPreDly = new KnobControl(panel, wxID_ANY, 0, 3000);
+	KnobControl* verbPreDly = new KnobControl(panel, wxID_ANY, 0, 3000, ScaleType::Linear, "PreDly");
 	verbPreDly->SetValue(500);
 	guiControls.verbPreDly = verbPreDly;
 
-	KnobControl* verbFiltType = new KnobControl(panel, wxID_ANY, -1, 1);
+	KnobControl* verbFiltType = new KnobControl(panel, wxID_ANY, -1, 1, ScaleType::Linear, "Filter Type");
 	verbFiltType->SetValue(1);
 	guiControls.verbFiltType = verbFiltType;
 
-	KnobControl* verbFiltQ = new KnobControl(panel, wxID_ANY, 0, 10);
+	KnobControl* verbFiltQ = new KnobControl(panel, wxID_ANY, 0.1, 10, ScaleType::Linear, "Q");
 	verbFiltQ->SetValue(1);
 	guiControls.verbFiltQ = verbFiltQ;
 
-	KnobControl* verbCutoff = new KnobControl(panel, wxID_ANY, 80, 18000);
+	KnobControl* verbCutoff = new KnobControl(panel, wxID_ANY, 80, 18000, ScaleType::Linear, "Cutoff");
 	verbCutoff->SetValue(2000);
 	guiControls.verbCutoff = verbCutoff;
 
-	KnobControl* verbModFreq = new KnobControl(panel, wxID_ANY, 0, 10);
+	KnobControl* verbModFreq = new KnobControl(panel, wxID_ANY, 0.01, 10, ScaleType::Linear, "Mod Freq");
 	verbModFreq->SetValue(1);
 	guiControls.verbModFreq = verbModFreq;
 
-	KnobControl* verbModAmp = new KnobControl(panel, wxID_ANY, 0, 128);
+	KnobControl* verbModAmp = new KnobControl(panel, wxID_ANY, 0, 128, ScaleType::Linear, "Mod Amp");
 	verbModAmp->SetValue(12);
 	guiControls.verbModAmp = verbModAmp;
 
@@ -516,23 +516,23 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handl
 		});
 	guiControls.distType = distType;
 
-	KnobControl* distWet = new KnobControl(panel, wxID_ANY, 0, 100);
+	KnobControl* distWet = new KnobControl(panel, wxID_ANY, 0, 1, ScaleType::Linear, "Mix");
 	distWet->SetValue(50);
 	guiControls.distWet = distWet;
 
-	KnobControl* distDrive = new KnobControl(panel, wxID_ANY, 0, 100);
+	KnobControl* distDrive = new KnobControl(panel, wxID_ANY, 0.01, 10, ScaleType::Linear, "Drive");
 	distDrive->SetValue(2);
 	guiControls.distDrive = distDrive;
 
-	KnobControl* distCutoff = new KnobControl(panel, wxID_ANY, 80, 18000);
+	KnobControl* distCutoff = new KnobControl(panel, wxID_ANY, 80, 18000, ScaleType::Linear, "Cutoff");
 	distCutoff->SetValue(440);
 	guiControls.distCutoff = distCutoff;
 
-	KnobControl* distQ = new KnobControl(panel, wxID_ANY, 0, 10);
+	KnobControl* distQ = new KnobControl(panel, wxID_ANY, 0.1, 10, ScaleType::Linear, "Q");
 	distQ->SetValue(1);
 	guiControls.distQ = distQ;
 
-	KnobControl* distFiltType = new KnobControl(panel, wxID_ANY, -1, 1);
+	KnobControl* distFiltType = new KnobControl(panel, wxID_ANY, -1, 1, ScaleType::Linear, "FilterType");
 	distFiltType->SetValue(0);
 	guiControls.distFiltType = distFiltType;
 
