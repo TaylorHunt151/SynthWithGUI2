@@ -514,16 +514,28 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 		event.Skip();
 		window->SetFocus();
 		});
+	guiControls.distType = distType;
+
 	KnobControl* distWet = new KnobControl(panel, wxID_ANY, 0, 100);
 	distWet->SetValue(50);
+	guiControls.distWet = distWet;
+
 	KnobControl* distDrive = new KnobControl(panel, wxID_ANY, 0, 100);
 	distDrive->SetValue(2);
+	guiControls.distDrive = distDrive;
+
 	KnobControl* distCutoff = new KnobControl(panel, wxID_ANY, 80, 18000);
 	distCutoff->SetValue(440);
+	guiControls.distCutoff = distCutoff;
+
 	KnobControl* distQ = new KnobControl(panel, wxID_ANY, 0, 10);
 	distQ->SetValue(1);
+	guiControls.distQ = distQ;
+
 	KnobControl* distFiltType = new KnobControl(panel, wxID_ANY, -1, 1);
 	distFiltType->SetValue(0);
+	guiControls.distFiltType = distFiltType;
+
 	
 
 	//distGrid->Add(distOnCheck, 0, wxEXPAND);
