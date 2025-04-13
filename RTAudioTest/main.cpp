@@ -19,6 +19,8 @@
 #include "GUI2.h"
 #include "GUIClasses.h"
 #include "GUI3.h"
+#include "GUIStruct.h"
+#include "setVars.h"
 
 
 //****************************************************************************************************************************************************************
@@ -41,19 +43,22 @@ int channelCount = 2;//Not changeable.
 
 
 voice* voices = new voice[voiceCount];  //Dynamically allocate an array of voice objects.
-LFO* LFOs = new LFO[2];
+LFO* LFOs = new LFO[2];//creates LFO modulator
 KeyInputManager* keyInputManager = new KeyInputManager(); //Creates keyinput manager object.
-Delay* dly = new Delay();
-Distortion* distortion = new Distortion();
-Flanger* flanger = new Flanger();
+Delay* dly = new Delay();//Creates object for delay effect
+Distortion* distortion = new Distortion();//Creates distortion object
+Flanger* flanger = new Flanger();//...and so on
 Chorus* chorus = new Chorus();
 Goodverb* goodverb = new Goodverb();
+GUIControls guiControls;//Creates a struct to store all the GUI parameters, so they can be shared between functions
 
 
 
 //Creating global variables
+int oscType = 5;
 float filtCutoff = 220;
 float oscVol = 0.1;
+
 
 
 
@@ -84,8 +89,7 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
     keyInputManager->keyScan();
 
     for (int i = 0; i < voiceCount; i++) {
-
-        voices[i].setVars();
+        voices[i].setVars(&guiControls);
 
         voices[i].oscillator(nBufferFrames, channelCount); //This is where the oscillator method is called.
         voices[i].oscillator2(nBufferFrames, channelCount);

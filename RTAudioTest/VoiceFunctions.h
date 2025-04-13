@@ -23,14 +23,18 @@
 #include "Modulators.h"
 #include <cmath>
 
+
 extern std::atomic<int> bufferSize; //DON'T ADD A UI ELEMENT FOR THIS
 
 extern std::vector<std::vector<double>> filterOutReg;
 extern std::vector<std::vector<double>> filterInReg;
 extern int channelCount;
 
-extern float filtCutoff;
-extern float oscVol;
+struct GUIControls;
+//extern GUIControls guiControls;
+
+//extern float filtCutoff;
+//extern float oscVol;
 //extern bool oscToggle;
 //extern int oscWave;
 //extern double oscPhsOff;
@@ -77,7 +81,6 @@ public:
 	}
 
 	//OSCILLATOR PARAMETERS
-	std::atomic<bool> oscOn = true; //Controlled via checkbox in the GUI. Controls whether the oscillator is on or of.
 	std::atomic<int> oscType = 2;//This should be changeable via dropdown menu, range 0 to 4
 	std::atomic<double> oscAmp = 0.01;//This should be changeable via knob/slider, range 0 to 0.1. Scaled logarithmically.
 	std::atomic<double> oscPhaseOffset = 0.0; //This should be changeable via knob, range -1 to 1. Linear scale.
@@ -87,7 +90,7 @@ public:
 	double oscPhase = 0.0; //DON'T CHANGE THIS
 
 	void oscillator(int buffSize, int channels) {
-		if (oscOn) {
+		if (oscType != 5) {
 			switch (oscType) {
 			case 0: //Sine wave
 				for (int i = 0; i < buffSize; i++) {
@@ -390,7 +393,7 @@ public:
 	std::atomic<double> cutoffSet = 880; //this should be changeable via knob (range from 80 to 18,000, default 220. Scaled exponentially)
 	std::atomic<double> q = 1; //This should be changeable via knob. (range from 0.01 to 10). Logarithmic scale
 	std::atomic<double> filterType = 1; //This should be changeable via knob. (range from -1 to 1), linear scale.
-	std::atomic<bool> keyTrack = true; //This should be changeable via checkbox in the GUI.
+	std::atomic<bool> keyTrack = false; //This should be changeable via checkbox in the GUI.
 	double cutoff = cutoffSet;
 	double biqCoefs[5] = { 0,0,0,0,0 };//Not changeable
 
@@ -468,27 +471,5 @@ public:
 		
 	}
 
-	void setVars() { //In order to set the variables from outside the audio thread, I use global variables as a sort-of middleman. This is super hacky. I'm sure there's a faster and better way to do this, but I'm too tired to care.
-		cutoffSet = filtCutoff;
-		oscAmp = oscVol;
-		//oscOn = oscToggle;
-		//oscType = oscWave;
-		//oscPhaseOffset = oscPhsOff;
-		//oscPitchShift = oscPtchShft;
-
-		//osc2On = osc2Toggle;
-		//osc2Amp = osc2Vol;
-		//osc2PhaseOffset = osc2PhsOff;
-		//osc2PitchShift = osc2PtchShft;
-
-		//attack = atk;
-		//decay = dcy;
-		//sustain = sus;
-		//release = rls;
-
-		//q = filtQ;
-		//filterType = filtType;
-		//keyTrack = keyTrck;
-
-	}
+	void setVars(GUIControls* guiControls);
 };

@@ -20,7 +20,7 @@
 class Goodverb { //a reverb that (hopefully) doesn't sound like trash. Work in progress
 	//NOTE: The reverb will be based on Dattorro's Plate Reverb, a very popular reverb algorithm designed in 1997.
 public:
-	std::atomic<bool> on = true; //turns delay on or off. Controlled via checkbox in GUI.
+	std::atomic<bool> on = false; //turns delay on or off. Controlled via checkbox in GUI.
 	std::atomic<double> decayTime = 0.15; //Controls how long the reverb is. Range from 0 to 0.499. Controlled via knob. Logarithmically scaled
 	std::atomic<double> wetMix = .5; //controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob/slider in GUI. Linearly scaled
 	std::atomic<double> dampFreq = 5000; //Controls the lowpass filters in the feedback loop. Range from 30 to 5000, controlled via knob. Exponentially scaled.

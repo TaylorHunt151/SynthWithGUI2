@@ -53,5 +53,11 @@
     <ClInclude Include="GUI3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GUIStruct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="setVars.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

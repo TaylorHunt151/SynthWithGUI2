@@ -151,9 +151,11 @@
     <ClInclude Include="GUI2.h" />
     <ClInclude Include="GUI3.h" />
     <ClInclude Include="GUIClasses.h" />
+    <ClInclude Include="GUIStruct.h" />
     <ClInclude Include="KeyInputManager.h" />
     <ClInclude Include="Modulators.h" />
     <ClInclude Include="RtAudio.h" />
+    <ClInclude Include="setVars.h" />
     <ClInclude Include="stdc++.h" />
     <ClInclude Include="VoiceFunctions.h" />
   </ItemGroup>

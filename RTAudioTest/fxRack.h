@@ -42,7 +42,7 @@ extern std::atomic<int> bufferSize; //Dont add a UI element for this
 
 class Delay {
 public:
-    std::atomic<bool> on = true; //Turns delay on or off. Controlled via checkbox in GUI.
+    std::atomic<bool> on = false; //Turns delay on or off. Controlled via checkbox in GUI.
     std::atomic<double> delayTime = .5; //Delay time in seconds. Controlled via GUI. Should range from 0.001 to 10. Exponential scale.
     std::atomic<double> wetMix = 0.5; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale.
 	std::atomic<double> drive = .1;//Controls the distortion's harshness. Range from 0 to 1, controlled via knob, logarithmic scale.
@@ -396,7 +396,7 @@ public:
 
 class Distortion{
 public:
-	std::atomic<bool> on = true; //Turns distortion on or off. Controlled via checkbox in GUI.
+	std::atomic<bool> on = false; //Turns distortion on or off. Controlled via checkbox in GUI.
 	std::atomic<double> wetMix = .125; //Controls how loud the distorted signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale
 	std::atomic<double> drive = .1;//Drives the signal into the distortion algorithm. Ranges from 0.01 to 1. Controlled via knob/slider in GUI. Logarithmic scale.
 	std::atomic<int> type = 1; //Ranges from 0 to 3 (or more, will decide later). Controlled via dropdown menu in GUI.
@@ -542,7 +542,7 @@ public:
 
 class Chorus {
 public:
-	std::atomic<bool> on = true; //Turns delay on or off. Controlled via checkbox in GUI.
+	std::atomic<bool> on = false; //Turns delay on or off. Controlled via checkbox in GUI.
 	std::atomic<double> delayTime = .03; //Delay time in seconds. Controlled via knob in GUI. Should range from 0.003 to .05. Linear scale.
 	std::atomic<double> wetMix = 0.5; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale.
 	std::atomic<double> drive = .3;//Controls the distortion's harshness. Range from 0 to 1, controlled via knob, logarithmic scale.
