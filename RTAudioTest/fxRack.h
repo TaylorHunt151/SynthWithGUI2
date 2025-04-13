@@ -188,11 +188,11 @@ public:
 
 					distort(delayedSample);
 
-					buffer[i * channelCount + j] = buffer[i * channelCount + j] * (1.0 - wetMix) + delayedSample * wetMix;				//Mix the delayed sample with the current sample.
+					buffer[i * channelCount + j] = buffer[i * channelCount + j] * (1.0 - wetMix) + delayedSample * wetMix;//Mix the delayed sample with the current sample.
 
-					tap[writeIndex + j] = tempBuffer[i * channelCount + j] + delayedSample * feedback;				//Write the current sample to the delay buffer with feedback.
+					tap[writeIndex + j] = tempBuffer[i * channelCount + j] + delayedSample * feedback;//Write the current sample to the delay buffer with feedback.
 				}
-				writeIndex = (writeIndex + channelCount) % tap.size();			//Increment write index and wrap around if necessary.
+				writeIndex = (writeIndex + channelCount) % tap.size();//Increment write index and wrap around if necessary.
 
 			}
 		}
@@ -206,10 +206,7 @@ public:
     std::atomic<bool> on = false; //Turns delay on or off. Controlled via checkbox in GUI.
     std::atomic<double> delayTime = .003; //Delay time in seconds. Controlled via knob in GUI. Should range from 0.0005 to .005. Linear scale.
     std::atomic<double> wetMix = 0.5; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale.
-	std::atomic<double> drive = .1;//Controls the distortion's harshness. Range from 0 to 1, controlled via knob, logarithmic scale.
-	std::atomic<double> distMix = 0.25; //Changeable via knob, range 0 to 1, controls the amount of distortion. Linear scale.
     std::atomic<double> feedback = 0.99; //Controls delay feedback amount. Controlled via knob/slider in GUI. Range from 0 to 1.5. Linear scale.
-	std::atomic<int> distType = 0; //Controls the distortion type. Controlled via dropdown menu, range from 0 to 5
 	std::atomic<double> modAmnt = .002;
 	std::atomic<double> modFreq = .1;
 
@@ -308,28 +305,6 @@ public:
 		}
 	}
 
-	double distort(double x) {
-
-		double y = 0; 
-
-		switch (distType) {//Decides which type of distortion to use. All distortion algorithms are taken from page 548 of Will Pirkle's aforementioned book.
-
-			case 0: y = atan(drive * x) / atan(drive); break;//Arctan distortion
-
-			case 1: y = sign(x) * (1 - exp(abs(drive * x))) / (1 - exp(-drive)); break; //Exponential fuzz
-
-			case 2: y = tanh(x * drive) / tanh(drive); break; //Hyperbolic tangent
-
-			case 3: y = 2 * (1 / (1 + exp(-drive * x))) - 1; break; //sigmoid
-
-			case 4: y = (3 * x / 2) * (1 - (x * x / 3)); break; //Sigmoid2 (mild)
-
-			case 5: y = x * x * x; break; //cubic distortion
-
-		}
-		return y;
-
-	}
 
 	void modulator() {
 		for (int i = 0; i < bufferSize; i++) {
@@ -396,7 +371,6 @@ public:
 
 class Distortion{
 public:
-	std::atomic<bool> on = false; //Turns distortion on or off. Controlled via checkbox in GUI.
 	std::atomic<double> wetMix = .125; //Controls how loud the distorted signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale
 	std::atomic<double> drive = .1;//Drives the signal into the distortion algorithm. Ranges from 0.01 to 1. Controlled via knob/slider in GUI. Logarithmic scale.
 	std::atomic<int> type = 1; //Ranges from 0 to 3 (or more, will decide later). Controlled via dropdown menu in GUI.
@@ -516,7 +490,7 @@ public:
 	}
 
 	void distort(double* buffer) {
-		if (on) {
+		if (type != 6) {
 			for (int i = 0; i < (bufferSize * channelCount); i++) {
 				tempBuffer[i] = buffer[i];
 			}
@@ -545,10 +519,7 @@ public:
 	std::atomic<bool> on = false; //Turns delay on or off. Controlled via checkbox in GUI.
 	std::atomic<double> delayTime = .03; //Delay time in seconds. Controlled via knob in GUI. Should range from 0.003 to .05. Linear scale.
 	std::atomic<double> wetMix = 0.5; //Controls how loud the delayed signal is compared to the unaffected (dry) signal. Ranges from 0 to 1. Controlled via knob in GUI. Linear scale.
-	std::atomic<double> drive = .3;//Controls the distortion's harshness. Range from 0 to 1, controlled via knob, logarithmic scale.
-	std::atomic<double> distMix = 0.25; //Changeable via knob, range 0 to 1, controls the amount of distortion. Linear scale.
 	std::atomic<double> feedback = 0.5; //Controls delay feedback amount. Controlled via knob/slider in GUI. Range from 0 to 1.5. Linear scale.
-	std::atomic<int> distType = 0; //Controls the distortion type. Controlled via dropdown menu, range from 0 to 5
 	std::atomic<double> modAmnt = .02; //controlled via knob. Range from 0 to 0.05, linear scale
 	std::atomic<double> modFreq = .1; //controlled via knob. Range from 0.01 to 10. Exponential scale.
 
@@ -647,28 +618,7 @@ public:
 		}
 	}
 
-	double distort(double x) {
 
-		double y = 0;
-
-		switch (distType) {//Decides which type of distortion to use. All distortion algorithms are taken from page 548 of Will Pirkle's aforementioned book.
-
-		case 0: y = atan(drive * x) / atan(drive); break;//Arctan distortion
-
-		case 1: y = sign(x) * (1 - exp(abs(drive * x))) / (1 - exp(-drive)); break; //Exponential fuzz
-
-		case 2: y = tanh(x * drive) / tanh(drive); break; //Hyperbolic tangent
-
-		case 3: y = 2 * (1 / (1 + exp(-drive * x))) - 1; break; //sigmoid
-
-		case 4: y = (3 * x / 2) * (1 - (x * x / 3)); break; //Sigmoid2 (mild)
-
-		case 5: y = x * x * x; break; //cubic distortion
-
-		}
-		return y;
-
-	}
 
 	void modulator() {
 		for (int i = 0; i < bufferSize; i++) {

@@ -89,7 +89,7 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
     keyInputManager->keyScan();
 
     for (int i = 0; i < voiceCount; i++) {
-        voices[i].setVars(&guiControls);
+        voices[i].setVars(&guiControls);//sets the voice parameters (oscillator type, filter cutoff, etc.) according to the GUI input
 
         voices[i].oscillator(nBufferFrames, channelCount); //This is where the oscillator method is called.
         voices[i].oscillator2(nBufferFrames, channelCount);
@@ -104,6 +104,7 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
         }
 
     }
+    setFXVars(&guiControls, flanger, chorus, dly, goodverb, distortion);//Sets the fx parameters based on the GUI input
     flanger->flanger(buffer);
     chorus->chorus(buffer);
     dly->delay(buffer);

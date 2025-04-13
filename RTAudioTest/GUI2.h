@@ -4,7 +4,7 @@
 
 extern GUIControls guiControls;
 
-void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
+void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handles a large bulk of the GUI fron-end code
 
 
 
