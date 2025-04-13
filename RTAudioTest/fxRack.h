@@ -39,6 +39,7 @@
 
 extern int channelCount;
 extern std::atomic<int> bufferSize; //Dont add a UI element for this
+extern std::atomic<int> sampRate;
 
 class Delay {
 public:
@@ -81,43 +82,52 @@ public:
 	void biquadCoefs() { //Finds the coefficients 
 		//NOTE: biquad filters have a unique trait. They can be any type of filter depending on how you set your coefficients.
 		//This means they can be used as lowpass, bandpass, or highpass filters. You can even blend them together to create hybrid filters, which I do below.
-		cutoff = cutoffSet;
-		double w = (2 * 3.14159) * (cutoff / 44100);
+		//cutoff = cutoffSet;
+		double w = (2 * 3.14159) * (cutoff / sampRate);
 		double a = sin(w) / (2 * q);
+		double cosw = cos(w);
 
-		if (filterType <= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
-			double filType = filterType * -1;
-			biqCoefs[0] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (a)) / 2) / (1 + a);
-			biqCoefs[1] = (1 - cos(w)) / (1 + a);
-			biqCoefs[2] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (0 - a)) / 2) / (1 + a);
-			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
+		if (filterType >= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
+			biqCoefs[0] = (((filterType * (1 - cosw) / 2) + (1 - filterType) * a) / 2) / (1 + a);
+			biqCoefs[1] = filterType * (1 - cosw / (1 + a));
+			biqCoefs[2] = ((filterType * (1 - cosw) / 2) - (1 - filterType) * a) / (1 + a);
+			biqCoefs[3] = (-2 * cosw) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}
 		else { //If filterType < 0, I take the equation for a highpass filter and a bandpass filter and "blend" them together using a weighted average.
-			biqCoefs[0] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (a)) / 2) / (1 + a);
-			biqCoefs[1] = (filterType * (-1 + cos(w))) / (1 + a);
-			biqCoefs[2] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (-a)) / 2) / (1 + a);
-			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
+			double filtType = -filterType;
+			biqCoefs[0] = (((filtType * (1 + cosw) / 2) + (1 - filtType) * a)) / (1 + a);
+			biqCoefs[1] = (filtType * (-1 + cosw)) / (1 + a);
+			biqCoefs[2] = (((filtType * (1 + cosw) / 2) - (1 - filtType) * (a))) / (1 + a);
+			biqCoefs[3] = (-2 * cosw) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}//This implementation allows the user too seamlessly blend between the three main filter types, giving extra control over the timbre of the synth.
 
 		//gain compensation
-		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. Robert Bristow-Johnson's Audio EQ Cookbook includes some formulas to help us compensate for this and have more consistent gain across the frequency spectrum.
+		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. 
+		double gainLP = 1;
+		double gainHP = 1;
+		double gainBP = 1;
 		double gain = 1;
-		if (filterType >= 0.5) {//Formula for if the filter is lowpass
-			gain = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);
+
+		gainLP = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);//calculates gain at DC for the lowpass filter (DC = 0hz)
+
+		gainHP = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);//calculates gain at Nyquist for the highpass filter (nyquist is the highest frequency in the signal)
+
+		double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);//calculates the real portion of the gain at the center frequency for bandpass
+		double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);//Calculates the imaginary portion of the bandpass gain
+		double mag = sqrt(real * real + imag * imag);//computes the magnitude by combining the real and imaginary portions together
+		gainBP = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));//Calculates the gain at the cutoff frequency for the bandpass filter
+
+
+		if (filterType >= 0) {//Calculates overall gain if the filter is bandpass, lowpass, or anything in-between
+			gain = filterType * gainLP + (1 - filterType) * gainBP;
 		}
-		else if (filterType <= -0.5) {//formula for if the filter is highpass
-			gain = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);
-		}
-		else {//Formula for if the filter is bandpass
-			double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);
-			double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);
-			double mag = sqrt(real * real + imag * imag);
-			gain = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));
+		else {//Calculates for overall gain if the filter is highpass, bandpass, or anywhere in-between.
+			gain = (-filterType) * gainHP + (1 + filterType) * gainBP;
 		}
 
-		if (gain != 0.0) {
+		if (gain != 0.0) { //dividing each B coefficient by the gain value to preserve unity-gain across the frequency spectrum
 			biqCoefs[0] /= gain;
 			biqCoefs[1] /= gain;
 			biqCoefs[2] /= gain;
@@ -157,7 +167,7 @@ public:
 
 			case 4: y = (3 * x / 2) * (1 - (x * x / 3)); break; //Sigmoid2 (mild)
 
-			case 5: y = x * x * x; break; //cubic distortion
+			case 5: y = x; break; //No distortion
 
 		}
 		return y;
@@ -165,6 +175,7 @@ public:
 	}
 	void delay(double* buffer) {
 		if (on) {
+			cutoff = cutoffSet;
 			int delaySamples = static_cast<int>(delayTime * 44100); //Converts delay time from seconds to samples.
 
 			tempBuffer.resize(bufferSize.load() * channelCount); //Resizes tempBuffer to the correct size
@@ -186,7 +197,7 @@ public:
 					int readIndex = (writeIndex + tap.size() - delaySamples * channelCount) % tap.size(); //Calculate read index for circular buffer.
 					double delayedSample = tap[readIndex + j]; //Get the delayed sample.
 
-					distort(delayedSample);
+					delayedSample = distort(delayedSample);
 
 					buffer[i * channelCount + j] = buffer[i * channelCount + j] * (1.0 - wetMix) + delayedSample * wetMix;//Mix the delayed sample with the current sample.
 
@@ -245,43 +256,52 @@ public:
 	void biquadCoefs() { //Finds the coefficients 
 		//NOTE: biquad filters have a unique trait. They can be any type of filter depending on how you set your coefficients.
 		//This means they can be used as lowpass, bandpass, or highpass filters. You can even blend them together to create hybrid filters, which I do below.
-		cutoff = cutoffSet;
-		double w = (2 * 3.14159) * (cutoff / 44100);
+		//cutoff = cutoffSet;
+		double w = (2 * 3.14159) * (cutoff / sampRate);
 		double a = sin(w) / (2 * q);
+		double cosw = cos(w);
 
-		if (filterType <= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
-			double filType = filterType * -1;
-			biqCoefs[0] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (a)) / 2) / (1 + a);
-			biqCoefs[1] = (1 - cos(w)) / (1 + a);
-			biqCoefs[2] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (0 - a)) / 2) / (1 + a);
-			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
+		if (filterType >= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
+			biqCoefs[0] = (((filterType * (1 - cosw) / 2) + (1 - filterType) * a) / 2) / (1 + a);
+			biqCoefs[1] = filterType * (1 - cosw / (1 + a));
+			biqCoefs[2] = ((filterType * (1 - cosw) / 2) - (1 - filterType) * a) / (1 + a);
+			biqCoefs[3] = (-2 * cosw) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}
 		else { //If filterType < 0, I take the equation for a highpass filter and a bandpass filter and "blend" them together using a weighted average.
-			biqCoefs[0] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (a)) / 2) / (1 + a);
-			biqCoefs[1] = (filterType * (-1 + cos(w))) / (1 + a);
-			biqCoefs[2] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (-a)) / 2) / (1 + a);
-			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
+			double filtType = -filterType;
+			biqCoefs[0] = (((filtType * (1 + cosw) / 2) + (1 - filtType) * a)) / (1 + a);
+			biqCoefs[1] = (filtType * (-1 + cosw)) / (1 + a);
+			biqCoefs[2] = (((filtType * (1 + cosw) / 2) - (1 - filtType) * (a))) / (1 + a);
+			biqCoefs[3] = (-2 * cosw) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}//This implementation allows the user too seamlessly blend between the three main filter types, giving extra control over the timbre of the synth.
 
 		//gain compensation
-		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. Robert Bristow-Johnson's Audio EQ Cookbook includes some formulas to help us compensate for this and have more consistent gain across the frequency spectrum.
+		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. 
+		double gainLP = 1;
+		double gainHP = 1;
+		double gainBP = 1;
 		double gain = 1;
-		if (filterType >= 0.5) {//Formula for if the filter is lowpass
-			gain = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);
+
+		gainLP = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);//calculates gain at DC for the lowpass filter (DC = 0hz)
+
+		gainHP = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);//calculates gain at Nyquist for the highpass filter (nyquist is the highest frequency in the signal)
+
+		double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);//calculates the real portion of the gain at the center frequency for bandpass
+		double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);//Calculates the imaginary portion of the bandpass gain
+		double mag = sqrt(real * real + imag * imag);//computes the magnitude by combining the real and imaginary portions together
+		gainBP = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));//Calculates the gain at the cutoff frequency for the bandpass filter
+
+
+		if (filterType >= 0) {//Calculates overall gain if the filter is bandpass, lowpass, or anything in-between
+			gain = filterType * gainLP + (1 - filterType) * gainBP;
 		}
-		else if (filterType <= -0.5) {//formula for if the filter is highpass
-			gain = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);
-		}
-		else {//Formula for if the filter is bandpass
-			double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);
-			double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);
-			double mag = sqrt(real * real + imag * imag);
-			gain = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));
+		else {//Calculates for overall gain if the filter is highpass, bandpass, or anywhere in-between.
+			gain = (-filterType) * gainHP + (1 + filterType) * gainBP;
 		}
 
-		if (gain != 0.0) {
+		if (gain != 0.0) { //dividing each B coefficient by the gain value to preserve unity-gain across the frequency spectrum
 			biqCoefs[0] /= gain;
 			biqCoefs[1] /= gain;
 			biqCoefs[2] /= gain;
@@ -320,6 +340,7 @@ public:
 
 	void flanger(double* buffer) {
 		if (on) {
+			cutoff = cutoffSet;
 			int delaySamples = static_cast<int>(delayTime * 44100); //Converts delay time from seconds to samples.
 			int modSamples = static_cast<int>(modAmnt * 44100);//converts mod depth from seconds to samples.
 			modAmp = static_cast<int>(modAmnt * 44100);
@@ -403,42 +424,51 @@ public:
 		//NOTE: biquad filters have a unique trait. They can be any type of filter depending on how you set your coefficients.
 		//This means they can be used as lowpass, bandpass, or highpass filters. You can even blend them together to create hybrid filters, which I do below.
 		//cutoff = cutoffSet;
-		double w = (2 * 3.14159) * (cutoff / 44100);
+		double w = (2 * 3.14159) * (cutoff / sampRate);
 		double a = sin(w) / (2 * q);
+		double cosw = cos(w);
 
-		if (filterType <= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
-			double filType = filterType * -1;
-			biqCoefs[0] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (a)) / 2) / (1 + a);
-			biqCoefs[1] = (1 - cos(w)) / (1 + a);
-			biqCoefs[2] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (0 - a)) / 2) / (1 + a);
-			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
+		if (filterType >= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
+			biqCoefs[0] = (((filterType * (1 - cosw) / 2) + (1 - filterType) * a) / 2) / (1 + a);
+			biqCoefs[1] = filterType * (1 - cosw / (1 + a));
+			biqCoefs[2] = ((filterType * (1 - cosw) / 2) - (1 - filterType) * a) / (1 + a);
+			biqCoefs[3] = (-2 * cosw) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}
 		else { //If filterType < 0, I take the equation for a highpass filter and a bandpass filter and "blend" them together using a weighted average.
-			biqCoefs[0] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (a)) / 2) / (1 + a);
-			biqCoefs[1] = (filterType * (-1 + cos(w))) / (1 + a);
-			biqCoefs[2] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (-a)) / 2) / (1 + a);
-			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
+			double filtType = -filterType;
+			biqCoefs[0] = (((filtType * (1 + cosw) / 2) + (1 - filtType) * a)) / (1 + a);
+			biqCoefs[1] = (filtType * (-1 + cosw)) / (1 + a);
+			biqCoefs[2] = (((filtType * (1 + cosw) / 2) - (1 - filtType) * (a))) / (1 + a);
+			biqCoefs[3] = (-2 * cosw) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}//This implementation allows the user too seamlessly blend between the three main filter types, giving extra control over the timbre of the synth.
 
 		//gain compensation
-		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. Robert Bristow-Johnson's Audio EQ Cookbook includes some formulas to help us compensate for this and have more consistent gain across the frequency spectrum.
+		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. 
+		double gainLP = 1;
+		double gainHP = 1;
+		double gainBP = 1;
 		double gain = 1;
-		if (filterType >= 0.5) {//Formula for if the filter is lowpass
-			gain = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);
+
+		gainLP = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);//calculates gain at DC for the lowpass filter (DC = 0hz)
+
+		gainHP = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);//calculates gain at Nyquist for the highpass filter (nyquist is the highest frequency in the signal)
+
+		double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);//calculates the real portion of the gain at the center frequency for bandpass
+		double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);//Calculates the imaginary portion of the bandpass gain
+		double mag = sqrt(real * real + imag * imag);//computes the magnitude by combining the real and imaginary portions together
+		gainBP = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));//Calculates the gain at the cutoff frequency for the bandpass filter
+
+
+		if (filterType >= 0) {//Calculates overall gain if the filter is bandpass, lowpass, or anything in-between
+			gain = filterType * gainLP + (1 - filterType) * gainBP;
 		}
-		else if (filterType <= -0.5) {//formula for if the filter is highpass
-			gain = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);
-		}
-		else {//Formula for if the filter is bandpass
-			double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);
-			double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);
-			double mag = sqrt(real * real + imag * imag);
-			gain = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));
+		else {//Calculates for overall gain if the filter is highpass, bandpass, or anywhere in-between.
+			gain = (-filterType) * gainHP + (1 + filterType) * gainBP;
 		}
 
-		if (gain != 0.0) {
+		if (gain != 0.0) { //dividing each B coefficient by the gain value to preserve unity-gain across the frequency spectrum
 			biqCoefs[0] /= gain;
 			biqCoefs[1] /= gain;
 			biqCoefs[2] /= gain;
@@ -483,14 +513,15 @@ public:
 
 			case 4: tempBuffer[i] = (3 * x / 2) * (1 - (x * x / 3)); break; //Sigmoid2 (mild)
 
-			case 5: tempBuffer[i] = x * x * x; break; //cubic distortion
+			case 5: tempBuffer[i] = x; break;
 
 		}
 		
 	}
 
 	void distort(double* buffer) {
-		if (type != 6) {
+		cutoff = cutoffSet;
+		if (type != 5) {
 			for (int i = 0; i < (bufferSize * channelCount); i++) {
 				tempBuffer[i] = buffer[i];
 			}
@@ -558,43 +589,52 @@ public:
 	void biquadCoefs() { //Finds the coefficients 
 		//NOTE: biquad filters have a unique trait. They can be any type of filter depending on how you set your coefficients.
 		//This means they can be used as lowpass, bandpass, or highpass filters. You can even blend them together to create hybrid filters, which I do below.
-		cutoff = cutoffSet;
-		double w = (2 * 3.14159) * (cutoff / 44100);
+		//cutoff = cutoffSet;
+		double w = (2 * 3.14159) * (cutoff / sampRate);
 		double a = sin(w) / (2 * q);
+		double cosw = cos(w);
 
-		if (filterType <= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
-			double filType = filterType * -1;
-			biqCoefs[0] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (a)) / 2) / (1 + a);
-			biqCoefs[1] = (1 - cos(w)) / (1 + a);
-			biqCoefs[2] = (((filType * (1 - cos(w)) / 2) + (1 - filType) * (0 - a)) / 2) / (1 + a);
-			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
+		if (filterType >= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
+			biqCoefs[0] = (((filterType * (1 - cosw) / 2) + (1 - filterType) * a) / 2) / (1 + a);
+			biqCoefs[1] = filterType * (1 - cosw / (1 + a));
+			biqCoefs[2] = ((filterType * (1 - cosw) / 2) - (1 - filterType) * a) / (1 + a);
+			biqCoefs[3] = (-2 * cosw) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}
 		else { //If filterType < 0, I take the equation for a highpass filter and a bandpass filter and "blend" them together using a weighted average.
-			biqCoefs[0] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (a)) / 2) / (1 + a);
-			biqCoefs[1] = (filterType * (-1 + cos(w))) / (1 + a);
-			biqCoefs[2] = (((filterType * (1 + cos(w)) / 2) + (1 - filterType) * (-a)) / 2) / (1 + a);
-			biqCoefs[3] = (-2 * cos(w)) / (1 + a);
+			double filtType = -filterType;
+			biqCoefs[0] = (((filtType * (1 + cosw) / 2) + (1 - filtType) * a)) / (1 + a);
+			biqCoefs[1] = (filtType * (-1 + cosw)) / (1 + a);
+			biqCoefs[2] = (((filtType * (1 + cosw) / 2) - (1 - filtType) * (a))) / (1 + a);
+			biqCoefs[3] = (-2 * cosw) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}//This implementation allows the user too seamlessly blend between the three main filter types, giving extra control over the timbre of the synth.
 
 		//gain compensation
-		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. Robert Bristow-Johnson's Audio EQ Cookbook includes some formulas to help us compensate for this and have more consistent gain across the frequency spectrum.
+		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. 
+		double gainLP = 1;
+		double gainHP = 1;
+		double gainBP = 1;
 		double gain = 1;
-		if (filterType >= 0.5) {//Formula for if the filter is lowpass
-			gain = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);
+
+		gainLP = (biqCoefs[0] + biqCoefs[1] + biqCoefs[2]) / (1 + biqCoefs[3] + biqCoefs[4]);//calculates gain at DC for the lowpass filter (DC = 0hz)
+
+		gainHP = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);//calculates gain at Nyquist for the highpass filter (nyquist is the highest frequency in the signal)
+
+		double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);//calculates the real portion of the gain at the center frequency for bandpass
+		double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);//Calculates the imaginary portion of the bandpass gain
+		double mag = sqrt(real * real + imag * imag);//computes the magnitude by combining the real and imaginary portions together
+		gainBP = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));//Calculates the gain at the cutoff frequency for the bandpass filter
+
+
+		if (filterType >= 0) {//Calculates overall gain if the filter is bandpass, lowpass, or anything in-between
+			gain = filterType * gainLP + (1 - filterType) * gainBP;
 		}
-		else if (filterType <= -0.5) {//formula for if the filter is highpass
-			gain = (biqCoefs[0] - biqCoefs[1] + biqCoefs[2]) / (1 - biqCoefs[3] + biqCoefs[4]);
-		}
-		else {//Formula for if the filter is bandpass
-			double real = biqCoefs[0] + biqCoefs[1] * cos(w) + biqCoefs[2] * cos(2 * w);
-			double imag = biqCoefs[1] * sin(w) + biqCoefs[2] * sin(2 * w);
-			double mag = sqrt(real * real + imag * imag);
-			gain = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));
+		else {//Calculates for overall gain if the filter is highpass, bandpass, or anywhere in-between.
+			gain = (-filterType) * gainHP + (1 + filterType) * gainBP;
 		}
 
-		if (gain != 0.0) {
+		if (gain != 0.0) { //dividing each B coefficient by the gain value to preserve unity-gain across the frequency spectrum
 			biqCoefs[0] /= gain;
 			biqCoefs[1] /= gain;
 			biqCoefs[2] /= gain;
@@ -633,6 +673,7 @@ public:
 	}
 
 	void chorus(double* buffer) {
+		cutoff = cutoffSet;
 		if (on) {
 			int delaySamples = static_cast<int>(delayTime * 44100); //Converts delay time from seconds to samples.
 			int modSamples = static_cast<int>(modAmnt * 44100);//converts mod depth from seconds to samples.

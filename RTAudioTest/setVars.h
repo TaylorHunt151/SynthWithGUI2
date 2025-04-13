@@ -34,8 +34,23 @@ void voice::setVars(GUIControls* guiControls) { //This sets the parameters of al
 
 }
 
-void setFXVars(GUIControls* guiControls, Flanger* flanger, Chorus* chorus, Delay* dly, Goodverb* verb, Distortion* dist) {//This sets the parameters of all the effects on the fx rack
+void setFXVars(GUIControls* guiControls, Flanger* flanger, Chorus* chorus, Delay* dly, Goodverb* verb, Distortion* dist, LFO* lfo) {//This sets the parameters of all the effects on the fx rack
+	
+	//MOD1
+	lfo[0].carrier = guiControls->modCarrier->GetSelection();
+	lfo[0].type = guiControls->modType->GetSelection();
+	lfo[0].amp = guiControls->modAmp->GetValue();
+	lfo[0].phaseOffset = guiControls->modPhase->GetValue();
+	lfo[0].freq = guiControls->modFreq->GetValue();
 
+	//MOD2
+	lfo[1].carrier = guiControls->mod2Carrier->GetSelection();
+	lfo[1].type = guiControls->mod2Type->GetSelection();
+	lfo[1].amp = guiControls->mod2Amp->GetValue();
+	lfo[1].phaseOffset = guiControls->mod2Phase->GetValue();
+	lfo[1].freq = guiControls->mod2Freq->GetValue();
+	
+	
 	//FLANGER
 	flanger->on = guiControls->flngOn->GetSelection();
 	flanger->delayTime = guiControls->flngTime->GetValue();

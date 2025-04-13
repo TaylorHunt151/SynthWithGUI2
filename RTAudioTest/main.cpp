@@ -15,12 +15,11 @@
 #include "fxRack.h"
 #include <wx/dcbuffer.h> //Add this include for wxAutoBufferedPaintDC
 #include "Goodverb.h"
-#include "GUI.h"
 #include "GUI2.h"
 #include "GUIClasses.h"
-#include "GUI3.h"
 #include "GUIStruct.h"
 #include "setVars.h"
+#include <wx/image.h>
 
 
 //****************************************************************************************************************************************************************
@@ -35,7 +34,7 @@
 //GENERAL SYNTH PARAMETERS
 //These parameters require reinitialization of the audio device to be changed.
 std::atomic<int> sampRate = 44100;//DON'T ADD A UI ELEMENT FOR THIS YET
-std::atomic<int> bufferSize = 128;//DON'T ADD A UI ELEMENT FOR THIS YET
+std::atomic<int> bufferSize = 512;//DON'T ADD A UI ELEMENT FOR THIS YET
 std::atomic<bool> reInit = false; //This should trigger the audioStart() method and reinitialize the device. DON'T ADD A UI ELEMENT FOR THIS YET
 
 int voiceCount = 4;//This should be changeable via dropdown menu (NOT YET IMPLEMENTED)
@@ -82,6 +81,8 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
         }
     }
 
+    setFXVars(&guiControls, flanger, chorus, dly, goodverb, distortion, LFOs);//Sets the fx parameters based on the GUI input
+
     for (int i = 0; i < 2; i++) {
         LFOs[i].lfoGen();
     }
@@ -104,7 +105,6 @@ int audioLoop(void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames,
         }
 
     }
-    setFXVars(&guiControls, flanger, chorus, dly, goodverb, distortion);//Sets the fx parameters based on the GUI input
     flanger->flanger(buffer);
     chorus->chorus(buffer);
     dly->delay(buffer);
@@ -213,25 +213,45 @@ public:
         /***************************************************
         * GUI Functions are called below
         ****************************************************/
-        quanGUI(window, panel);
         GUI2(window, panel, mainSizer);
 
         // -------------------------------------------------
-        // LOWER ROW: Keyboard Visualization and Debugging Box.
+        // LOWER ROW: Keyboard Visualization, Logo and Debugging Box.
         // -------------------------------------------------
         wxBoxSizer* lowerSizer = new wxBoxSizer(wxHORIZONTAL);
+
+        wxInitAllImageHandlers(); //Initialize image handler
+        wxString imagePath = wxGetCwd() + wxT("\\temolotransparent.png"); //set image path
+
+        wxImage logoImage;
+
+        logoImage.LoadFile(imagePath, wxBITMAP_TYPE_PNG);
+
+        int logoWid = logoImage.GetWidth();
+        int logoHgt = logoImage.GetHeight();
+
+        double logoScaler = 0.2;//how big i want the image relative to its original size
+
+        logoImage.Rescale(logoWid * logoScaler, logoHgt * logoScaler, wxIMAGE_QUALITY_HIGH);//Resize the image to fit on the screen
+        wxBitmap logoBitmap(logoImage);
+
+        wxStaticBitmap* logo = new wxStaticBitmap(panel, wxID_ANY, logoBitmap);
+
+        lowerSizer->Add(logo, 0, wxALL | wxALIGN_LEFT | wxALIGN_CENTER, 10);
+
+
 
         PianoKeyboard* pianoKeyboard = new PianoKeyboard(panel, wxID_ANY);
         pianoKeyboard->SetMinSize(wxSize(600, 100));
 
         // Increase the debug box size to 200x300 so all text is visible (no scrolling needed).
-        wxTextCtrl* debugBox = new wxTextCtrl(panel, wxID_ANY, "",
-            wxDefaultPosition, wxSize(200, 300),
-            wxTE_MULTILINE | wxTE_READONLY | wxBORDER_SIMPLE);
+        //wxTextCtrl* debugBox = new wxTextCtrl(panel, wxID_ANY, "",
+        //    wxDefaultPosition, wxSize(200, 300),
+        //    wxTE_MULTILINE | wxTE_READONLY | wxBORDER_SIMPLE);
 
         lowerSizer->AddStretchSpacer(1);
         lowerSizer->Add(pianoKeyboard, 0, wxALL, 10);
-        lowerSizer->Add(debugBox, 0, wxALL | wxALIGN_RIGHT, 10);
+        //lowerSizer->Add(debugBox, 0, wxALL | wxALIGN_RIGHT, 10);
         lowerSizer->AddStretchSpacer(1);
         mainSizer->Add(lowerSizer, 0, wxEXPAND | wxALL, 10);
 
@@ -239,29 +259,6 @@ public:
         window->Show();
         window->SetFocus();
 
-        // -------------------------------------------------
-        // Key Event Bindings: Update our KeyInputManager and refresh the PianoKeyboard.
-        // -------------------------------------------------
-        //window->Bind(wxEVT_KEY_DOWN, [=](wxKeyEvent& event) {//Key down event
-        //    char key = static_cast<char>(event.GetUnicodeKey());
-        //    key = toupper(key);
-        //    if (key >= 'A' && key <= 'P') {
-        //        // Refresh immediately so the key color updates.
-        //        pianoKeyboard->Refresh();
-        //    }
-        //    keyInputManager->OnKeyDown(event);
-        //    event.Skip();
-        //    });
-
-        //window->Bind(wxEVT_KEY_UP, [=](wxKeyEvent& event) {//Key up event
-        //    char key = static_cast<char>(event.GetUnicodeKey());
-        //    key = toupper(key);
-        //    if (key >= 'A' && key <= 'P') {
-        //        pianoKeyboard->Refresh();
-        //    }
-        //    keyInputManager->OnKeyUp(event);
-        //    event.Skip();
-        //    });
 
 
 
@@ -296,7 +293,7 @@ public:
                     state = "off";
                 debugText << keyLabel << ": " << state << "\n";
             }
-            debugBox->SetValue(debugText);
+            //debugBox->SetValue(debugText);
             });
         updateTimer->Start(50); // Update every 50 ms.
 

@@ -38,6 +38,24 @@ struct GUIControls {
 	KnobControl* filtTypeKnob = nullptr;
 
 	/**********************************
+	* MOD1 CONTROLS
+	***********************************/
+	wxChoice* modType = nullptr;
+	KnobControl* modFreq = nullptr;
+	KnobControl* modPhase = nullptr;
+	KnobControl* modAmp = nullptr;
+	wxChoice* modCarrier = nullptr;
+
+	/**********************************
+	* MOD2 CONTROLS
+	***********************************/
+	wxChoice* mod2Type = nullptr;
+	KnobControl* mod2Freq = nullptr;
+	KnobControl* mod2Phase = nullptr;
+	KnobControl* mod2Amp = nullptr;
+	wxChoice* mod2Carrier = nullptr;
+
+	/**********************************
 	* FLANGER CONTROLS
 	***********************************/
 	wxChoice* flngOn = nullptr;

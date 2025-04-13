@@ -113,35 +113,35 @@ private:
 
 
         switch (noteSet[oscNum]) { //Use the instance to access noteSet
-        case 'Z': voices[oscNum].oscFreq = 65.41; break;
-        case 'S': voices[oscNum].oscFreq = 69.3; break;
-        case 'X': voices[oscNum].oscFreq = 73.42; break;
-        case 'D': voices[oscNum].oscFreq = 77.78; break;
-        case 'C': voices[oscNum].oscFreq = 82.41; break;
-        case 'V': voices[oscNum].oscFreq = 87.31; break;
-        case 'G': voices[oscNum].oscFreq = 92.5; break;
-        case 'B': voices[oscNum].oscFreq = 98; break;
-        case 'H': voices[oscNum].oscFreq = 103.83; break;
-        case 'N': voices[oscNum].oscFreq = 110; break;
-        case 'J': voices[oscNum].oscFreq = 116.54; break;
-        case 'M': voices[oscNum].oscFreq = 123.47; break;
-        case 'Q': voices[oscNum].oscFreq = 130.81; break;
-        case '2': voices[oscNum].oscFreq = 138.59; break;
-        case 'W': voices[oscNum].oscFreq = 146.83; break;
-        case '3': voices[oscNum].oscFreq = 155.56; break;
-        case 'E': voices[oscNum].oscFreq = 164.81; break;
-        case 'R': voices[oscNum].oscFreq = 174.61; break;
-        case '5': voices[oscNum].oscFreq = 185; break;
-        case 'T': voices[oscNum].oscFreq = 196; break;
-        case '6': voices[oscNum].oscFreq = 207.65; break;
-        case 'Y': voices[oscNum].oscFreq = 220; break;
-        case '7': voices[oscNum].oscFreq = 233.08; break;
-        case 'U': voices[oscNum].oscFreq = 246.94; break;
-        case 'I': voices[oscNum].oscFreq = 261.63; break;
-        case '9': voices[oscNum].oscFreq = 277.78; break;
-        case 'O': voices[oscNum].oscFreq = 293.66; break;
-        case '0': voices[oscNum].oscFreq = 311.13; break;
-        case 'P': voices[oscNum].oscFreq = 329.63; break;
+        case 'Z': voices[oscNum].oscFreq = 65.41;  voices[oscNum].semitones = -21; break;
+        case 'S': voices[oscNum].oscFreq = 69.3; voices[oscNum].semitones = -20; break;
+        case 'X': voices[oscNum].oscFreq = 73.42; voices[oscNum].semitones = -19; break;
+        case 'D': voices[oscNum].oscFreq = 77.78; voices[oscNum].semitones = -18; break;
+        case 'C': voices[oscNum].oscFreq = 82.41; voices[oscNum].semitones = -17; break;
+        case 'V': voices[oscNum].oscFreq = 87.31; voices[oscNum].semitones = -16; break;
+        case 'G': voices[oscNum].oscFreq = 92.5; voices[oscNum].semitones = -15; break;
+        case 'B': voices[oscNum].oscFreq = 98; voices[oscNum].semitones = -14; break;
+        case 'H': voices[oscNum].oscFreq = 103.83; voices[oscNum].semitones = -13; break;
+        case 'N': voices[oscNum].oscFreq = 110; voices[oscNum].semitones = -12; break;
+        case 'J': voices[oscNum].oscFreq = 116.54; voices[oscNum].semitones = -11; break;
+        case 'M': voices[oscNum].oscFreq = 123.47; voices[oscNum].semitones = -10; break;
+        case 'Q': voices[oscNum].oscFreq = 130.81; voices[oscNum].semitones = -9; break;
+        case '2': voices[oscNum].oscFreq = 138.59; voices[oscNum].semitones = -8; break;
+        case 'W': voices[oscNum].oscFreq = 146.83; voices[oscNum].semitones = -7; break;
+        case '3': voices[oscNum].oscFreq = 155.56; voices[oscNum].semitones = -6; break;
+        case 'E': voices[oscNum].oscFreq = 164.81; voices[oscNum].semitones = -5; break;
+        case 'R': voices[oscNum].oscFreq = 174.61; voices[oscNum].semitones = -4; break;
+        case '5': voices[oscNum].oscFreq = 185; voices[oscNum].semitones = -3; break;
+        case 'T': voices[oscNum].oscFreq = 196; voices[oscNum].semitones = -2; break;
+        case '6': voices[oscNum].oscFreq = 207.65; voices[oscNum].semitones = -1;  break;
+        case 'Y': voices[oscNum].oscFreq = 220; voices[oscNum].semitones = 0; break;
+        case '7': voices[oscNum].oscFreq = 233.08; voices[oscNum].semitones = 1; break;
+        case 'U': voices[oscNum].oscFreq = 246.94; voices[oscNum].semitones = 2; break;
+        case 'I': voices[oscNum].oscFreq = 261.63; voices[oscNum].semitones = 3; break;
+        case '9': voices[oscNum].oscFreq = 277.78; voices[oscNum].semitones = 4; break;
+        case 'O': voices[oscNum].oscFreq = 293.66; voices[oscNum].semitones = 5; break;
+        case '0': voices[oscNum].oscFreq = 311.13; voices[oscNum].semitones = 6; break;
+        case 'P': voices[oscNum].oscFreq = 329.63; voices[oscNum].semitones = 7; break;
 
         default:
             voices[oscNum].oscAmpGoal = 0;
@@ -150,14 +150,13 @@ private:
 
         }
 
-        for (int i = 0; i < voiceCount; i++) {
-            if (voices[i].keyTrack) {
-                voices[i].cutoff = (voices[i].oscFreq - 220) + voices[i].cutoffSet;
-            }
-            else {
-                voices[i].cutoff = voices[i].cutoffSet;
-            }
+        if (voices[oscNum].keyTrack) {
+            voices[oscNum].cutoff = voices[oscNum].cutoffSet * pow(2, voices[oscNum].semitones / 12);
         }
+        else {
+            voices[oscNum].cutoff = voices[oscNum].cutoffSet;
+        }
+        
     }
 	
 };

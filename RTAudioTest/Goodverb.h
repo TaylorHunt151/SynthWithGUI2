@@ -17,6 +17,8 @@
 #include <vector>
 #include <cmath>
 
+extern std::atomic<int> sampRate;
+
 class Goodverb { //a reverb that (hopefully) doesn't sound like trash. Work in progress
 	//NOTE: The reverb will be based on Dattorro's Plate Reverb, a very popular reverb algorithm designed in 1997.
 public:
@@ -385,28 +387,29 @@ public:
 	void biquadCoefs(double cutoff, double q, double filtType, std::vector<double>& biqCoefs) { //Finds the coefficients for the biquad. Copied from voicefunctions.h, modified a bit for efficiency
 		//NOTE: biquad filters have a unique trait. They can be any type of filter depending on how you set your coefficients.
 		//This means they can be used as lowpass, bandpass, or highpass filters. You can even blend them together to create hybrid filters, which I do below.
-		double w = (2 * 3.14159) * (cutoff / 44100);
+		//cutoff = cutoffSet;
+		double w = (2 * 3.14159) * (cutoff / sampRate);
 		double a = sin(w) / (2 * q);
 		double cosw = cos(w);
 
-		if (filtType <= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
-			double filType = filtType * -1;
-			biqCoefs[0] = (((filType * (1 - cosw) / 2) + (1 - filType) * (a)) / 2) / (1 + a);
-			biqCoefs[1] = (1 - cosw) / (1 + a);
-			biqCoefs[2] = (((filType * (1 - cosw) / 2) + (1 - filType) * (0 - a)) / 2) / (1 + a);
+		if (filterType >= 0) {//If filerType >= 0, I take the equation for a lowpass filter and a bandpass filter and "blend" them together using a weighted average. 
+			biqCoefs[0] = (((filterType * (1 - cosw) / 2) + (1 - filterType) * a) / 2) / (1 + a);
+			biqCoefs[1] = filterType * (1 - cosw / (1 + a));
+			biqCoefs[2] = ((filterType * (1 - cosw) / 2) - (1 - filterType) * a) / (1 + a);
 			biqCoefs[3] = (-2 * cosw) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}
 		else { //If filterType < 0, I take the equation for a highpass filter and a bandpass filter and "blend" them together using a weighted average.
-			biqCoefs[0] = (((filtType * (1 + cosw) / 2) + (1 - filtType) * (a)) / 2) / (1 + a);
+			double filtType = -filterType;
+			biqCoefs[0] = (((filtType * (1 + cosw) / 2) + (1 - filtType) * a)) / (1 + a);
 			biqCoefs[1] = (filtType * (-1 + cosw)) / (1 + a);
-			biqCoefs[2] = (((filtType * (1 + cosw) / 2) + (1 - filtType) * (-a)) / 2) / (1 + a);
+			biqCoefs[2] = (((filtType * (1 + cosw) / 2) - (1 - filtType) * (a))) / (1 + a);
 			biqCoefs[3] = (-2 * cosw) / (1 + a);
 			biqCoefs[4] = (1 - a) / (1 + a);
 		}//This implementation allows the user too seamlessly blend between the three main filter types, giving extra control over the timbre of the synth.
 
 		//gain compensation
-		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. Robert Bristow-Johnson's Audio EQ Cookbook includes some formulas to help us compensate for this and have more consistent gain across the frequency spectrum.
+		//Note: Biquad filters naturally will have their gain change depending on what frequency they are tuned to. 
 		double gainLP = 1;
 		double gainHP = 1;
 		double gainBP = 1;
@@ -421,14 +424,15 @@ public:
 		double mag = sqrt(real * real + imag * imag);//computes the magnitude by combining the real and imaginary portions together
 		gainBP = mag / sqrt(1 + biqCoefs[3] * biqCoefs[3] + biqCoefs[4] * biqCoefs[4] + 2 * biqCoefs[3] * (1 + biqCoefs[4]) * cos(w) + 2 * biqCoefs[4] * cos(2 * w));//Calculates the gain at the cutoff frequency for the bandpass filter
 
+
 		if (filterType >= 0) {//Calculates overall gain if the filter is bandpass, lowpass, or anything in-between
 			gain = filterType * gainLP + (1 - filterType) * gainBP;
 		}
 		else {//Calculates for overall gain if the filter is highpass, bandpass, or anywhere in-between.
-			gain = (filterType)*gainHP + (1 + filterType) * gainBP;
+			gain = (-filterType) * gainHP + (1 + filterType) * gainBP;
 		}
 
-		if (gain != 0.0) {
+		if (gain != 0.0) { //dividing each B coefficient by the gain value to preserve unity-gain across the frequency spectrum
 			biqCoefs[0] /= gain;
 			biqCoefs[1] /= gain;
 			biqCoefs[2] /= gain;

@@ -67,26 +67,23 @@ public:
 			break;
 		case 2: //Sawtooth wave
 			for (int i = 0; i < bufferSize; i++) {
-				for (int j = 0; j < channelCount; j++)
-				{
-					localBuff[i * channelCount + j] = amp * (2 * phase - 1); //Calculates sawtooth wave values
-					phase += freq / 44100.0; //Keeps track of the phase
+				localBuff[i ] = amp * (2 * phase - 1); //Calculates sawtooth wave values
+				phase += freq / 44100.0; //Keeps track of the phase
 
-					if (phase >= 1.0) {
-						phase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
-					}
+				if (phase >= 1.0) {
+					phase = 0;//This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
 				}
+				
 			}
 			break;
 		case 3: //Triangle wave
 			for (int i = 0; i < bufferSize; i++) {
-				for (int j = 0; j < channelCount; j++) {
-					localBuff[i * channelCount + j] = amp * (2 * abs(2 * phase - 1) - 1); //Calculates triangle wave values
-					phase += freq / 44100.0; //Keeps track of the phase
-					if (phase >= 1.0) {
-						phase = 0; //This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
-					}
+				localBuff[i] = amp * (2 * abs(2 * phase - 1) - 1); //Calculates triangle wave values
+				phase += freq / 44100.0; //Keeps track of the phase
+				if (phase >= 1.0) {
+					phase = 0; //This resets phase to 0 when it reaches 1. This is necessary to prevent phase from becoming too large and causing an overflow error.
 				}
+				
 			}
 			break;
 

@@ -41,16 +41,10 @@
     <ClInclude Include="Goodverb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GUI.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GUI2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GUIClasses.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GUIStruct.h">
