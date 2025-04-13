@@ -381,7 +381,7 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) {
 
 	KnobControl* delayFiltQ = new KnobControl(panel, wxID_ANY, 0, 10);
 	delayFiltQ->SetValue(1);
-	guiControls.delayFiltQ = delayFiltQ;
+	guiControls.delayQ = delayFiltQ;
 
 	KnobControl* delayFiltType = new KnobControl(panel, wxID_ANY, -1, 1);
 	delayFiltType->SetValue(0);
