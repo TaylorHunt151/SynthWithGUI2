@@ -212,7 +212,7 @@ public:
 
 };
 
-class Flanger {
+class Flanger {//Note: a flanger is just a modulated delay with a shorter delay time. Thus, most of this code is re-used from the delay.
 public:
     std::atomic<bool> on = true; //Turns delay on or off. Controlled via checkbox in GUI.
     std::atomic<double> delayTime = .003; //Delay time in seconds. Controlled via knob in GUI. Should range from 0.0005 to .005. Linear scale.
@@ -340,9 +340,11 @@ public:
 
 	void flanger(double* buffer) {
 		if (on) {
+
 			cutoff = cutoffSet;
 			int delaySamples = static_cast<int>(delayTime * 44100); //Converts delay time from seconds to samples.
 			int modSamples = static_cast<int>(modAmnt * 44100);//converts mod depth from seconds to samples.
+
 			modAmp = static_cast<int>(modAmnt * 44100);
 
 			modBuff.resize(bufferSize.load() * channelCount, 0);
@@ -374,7 +376,6 @@ public:
 					}
 					
 					double delayedSample = tap[readIndex + j]; //Get the delayed sample.
-					//distort(delayedSample);
 
 					buffer[i * channelCount + j] = buffer[i * channelCount + j] * (1.0 - wetMix) + delayedSample * wetMix;				//Mix the delayed sample with the current sample.
 

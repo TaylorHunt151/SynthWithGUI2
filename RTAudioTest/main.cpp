@@ -242,12 +242,8 @@ public:
 
 
         PianoKeyboard* pianoKeyboard = new PianoKeyboard(panel, wxID_ANY);
-        pianoKeyboard->SetMinSize(wxSize(600, 100));
+        pianoKeyboard->SetMinSize(wxSize(1100, 350));
 
-        // Increase the debug box size to 200x300 so all text is visible (no scrolling needed).
-        //wxTextCtrl* debugBox = new wxTextCtrl(panel, wxID_ANY, "",
-        //    wxDefaultPosition, wxSize(200, 300),
-        //    wxTE_MULTILINE | wxTE_READONLY | wxBORDER_SIMPLE);
 
         lowerSizer->AddStretchSpacer(1);
         lowerSizer->Add(pianoKeyboard, 0, wxALL, 10);
@@ -259,43 +255,6 @@ public:
         window->Show();
         window->SetFocus();
 
-
-
-
-        // -------------------------------------------------
-        // Timer: Update the Debugging Box with EG values and Keyboard States.
-        // -------------------------------------------------
-        wxTimer* updateTimer = new wxTimer(window);
-        window->Bind(wxEVT_TIMER, [=](wxTimerEvent&) {
-            //int attackVal = attackKnob->GetValue();
-            //int decayVal = decayKnob->GetValue();
-            //int sustainVal = sustainKnob->GetValue();
-            //int releaseVal = releaseKnob->GetValue();
-
-            wxString debugText;
-            //debugText << "Envelope Generator:\n";
-            //debugText << "Attack: " << attackVal << "\n";
-            //debugText << "Decay: " << decayVal << "\n";
-            //debugText << "Sustain: " << sustainVal << "\n";
-            //debugText << "Release: " << releaseVal << "\n\n";
-            //debugText << "Keyboard States:\n";
-
-            //Note: noteSet has (usually) 16 entries, one for each voice object. The voice objects are designed to be set to any note, and the input logic in keyinputmanager is designed to dynamically set the frequency of each voice to match the notes being held down.
-            //The reason why I don't have one voice for each note is because it would take a ton of CPU power for that. This method of allocating voices is standard for pretty much all digital synths.
-            size_t numKeys = keyInputManager->noteSet.size();
-            for (size_t i = 0; i < numKeys && i < voiceCount; i++) {
-                char keyLabel = 'A' + i;
-                char noteValue = keyInputManager->noteSet[i];
-                wxString state;
-                if (noteValue != ' ')
-                    state.Printf("%c (pressed)", noteValue);
-                else
-                    state = "off";
-                debugText << keyLabel << ": " << state << "\n";
-            }
-            //debugBox->SetValue(debugText);
-            });
-        updateTimer->Start(50); // Update every 50 ms.
 
         // -------------------------------------------------
         // Start Audio Processing.
