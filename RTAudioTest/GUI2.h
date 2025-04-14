@@ -433,7 +433,7 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handl
 	*********************************************************************/
 	wxBoxSizer* delayBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxStaticBox* delayBox = new wxStaticBox(panel, wxID_ANY, "Delay");
-	wxGridSizer* delayGrid = new wxGridSizer(3, 4, 5, 5);
+	wxGridSizer* delayGrid = new wxGridSizer(3, 3, 5, 5);
 
 	wxChoice* delayOnCheck = new wxChoice(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, toggleStr);
 	delayOnCheck->SetSelection(0);
@@ -467,9 +467,9 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handl
 	delayFiltType->SetValue(0);
 	guiControls.delayFiltType = delayFiltType;
 
-	KnobControl* delayDrive = new KnobControl(panel, wxID_ANY, 0.1, 10, ScaleType::Logarithmic, "Drive");
-	delayDrive->SetValue(1);
-	guiControls.delayDrive = delayDrive;
+	//KnobControl* delayDrive = new KnobControl(panel, wxID_ANY, 0.1, 10, ScaleType::Logarithmic, "Drive");
+	//delayDrive->SetValue(1);
+	//guiControls.delayDrive = delayDrive;
 
 	KnobControl* delayDistMix = new KnobControl(panel, wxID_ANY, 0, 1, ScaleType::Linear, "Dist Mix");
 	delayDistMix->SetValue(0.5);
@@ -499,7 +499,7 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handl
 	delayGrid->Add(delayFiltQ, 0, wxEXPAND);
 	delayGrid->Add(delayFiltType, 0, wxEXPAND);
 	delayGrid->Add(dlyDistTypeMenu, 0);
-	delayGrid->Add(delayDrive, 0, wxEXPAND);
+	//delayGrid->Add(delayDrive, 0, wxEXPAND);
 	delayGrid->Add(delayDistMix, 0, wxEXPAND);
 
 	wxStaticBoxSizer* delayStatSizer = new wxStaticBoxSizer(delayBox, wxVERTICAL);
@@ -532,7 +532,7 @@ void GUI2(wxFrame* window, wxPanel* panel, wxBoxSizer* mainSizer) { //This handl
 	verbWet->SetValue(0.5);
 	guiControls.verbWet = verbWet;
 
-	KnobControl* verbDamp = new KnobControl(panel, wxID_ANY, 80, 18000, ScaleType::Exponential, "DampCut");
+	KnobControl* verbDamp = new KnobControl(panel, wxID_ANY, 80, 15000, ScaleType::Exponential, "DampCut");
 	verbDamp->SetValue(1000);
 	guiControls.verbDamp = verbDamp;
 

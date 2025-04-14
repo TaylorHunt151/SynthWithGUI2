@@ -92,7 +92,7 @@ struct GUIControls {
 	KnobControl* delayCutoff = nullptr;
 	KnobControl* delayQ = nullptr;
 	KnobControl* delayFiltType = nullptr;
-	KnobControl* delayDrive = nullptr;
+	//KnobControl* delayDrive = nullptr;
 	KnobControl* delayDistMix = nullptr;
 
 	/**********************************

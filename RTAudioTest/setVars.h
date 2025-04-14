@@ -80,7 +80,7 @@ void setFXVars(GUIControls* guiControls, Flanger* flanger, Chorus* chorus, Delay
 	dly->feedback = guiControls->delayFeedback->GetValue();
 	dly->distType = guiControls->dlyDistTypeMenu->GetSelection();
 	dly->distMix = guiControls->delayDistMix->GetValue();
-	dly->drive = guiControls->delayDrive->GetValue();
+	//dly->drive = guiControls->delayDrive->GetValue();
 	dly->cutoffSet = guiControls->delayCutoff->GetValue();
 	dly->q = guiControls->delayQ->GetValue();
 	dly->filterType = guiControls->delayFiltType->GetValue();
