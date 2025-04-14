@@ -31,30 +31,6 @@ extern std::vector<std::vector<double>> filterInReg;
 extern int channelCount;
 
 struct GUIControls;
-//extern GUIControls guiControls;
-
-//extern float filtCutoff;
-//extern float oscVol;
-//extern bool oscToggle;
-//extern int oscWave;
-//extern double oscPhsOff;
-//extern double oscPtchShft;
-//
-//extern bool osc2Toggle;
-//extern int osc2Wave;
-//extern double osc2Vol;
-//extern double osc2PhsOff;
-//extern double osc2PtchShft;
-//
-//extern double atk;
-//extern double dcy;
-//extern double sus;
-//extern double rls;
-//
-//extern double filtQ;
-//extern double filtType;
-//extern bool keyTrck;
-
 
 
 extern LFO* LFOs;
